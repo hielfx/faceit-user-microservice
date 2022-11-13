@@ -1,6 +1,6 @@
 db.users.insertMany([
   {
-    id: UUID("29621CF9-C989-4266-A5A2-085FD99A75E1"),
+    _id: UUID("29621CF9-C989-4266-A5A2-085FD99A75E1"),
     firstName: "Already inserted user first name",
     lastName: "Already inserted user last name",
     nickname: "Already inserted user nickname",
@@ -11,7 +11,7 @@ db.users.insertMany([
     updatedAt: new Date("2016-05-18T16:00:00Z"),
   },
   {
-    id: UUID("19957751-A789-44D4-BC3B-87390B0E7C0A"),
+    _id: UUID("19957751-A789-44D4-BC3B-87390B0E7C0A"),
     firstName: "User to delete first name",
     lastName: "User to delete last name",
     nickname: "User to delete nickname",
@@ -22,7 +22,7 @@ db.users.insertMany([
     updatedAt: new Date("2017-05-18T16:00:00Z"),
   },
   {
-    id: UUID("B0DD43EE-6BBA-49A5-929C-9A880CFCB285"),
+    _id: UUID("B0DD43EE-6BBA-49A5-929C-9A880CFCB285"),
     firstName: "Already inserted user first name",
     lastName: "Already inserted user last name",
     nickname: "Already inserted user nickname",
@@ -33,7 +33,7 @@ db.users.insertMany([
     updatedAt: new Date("2018-05-18T16:00:00Z"),
   },
   {
-    id: UUID("A6704CAB-EBB0-4679-B464-3DCA316DC74F"),
+    _id: UUID("A6704CAB-EBB0-4679-B464-3DCA316DC74F"),
     firstName: "Already inserted user first name",
     lastName: "Already inserted user last name",
     nickname: "Already inserted user nickname",
@@ -44,7 +44,7 @@ db.users.insertMany([
     updatedAt: new Date("2019-05-18T16:00:00Z"),
   },
   {
-    id: UUID("B5B02F0A-B3DB-4D09-B8D7-A0F4DB2E2091"),
+    _id: UUID("B5B02F0A-B3DB-4D09-B8D7-A0F4DB2E2091"),
     firstName: "Already inserted user first name",
     lastName: "Already inserted user last name",
     nickname: "Already inserted user nickname",

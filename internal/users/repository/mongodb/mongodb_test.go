@@ -133,17 +133,17 @@ func TestMongoDBRepository_Create(t *testing.T) {
 			"Create user with already existing ID",
 			models.User{
 				ID:        uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
-				FirstName: "First Name",
-				LastName:  "Last name",
-				Nickname:  "Nickname",
-				Password:  "Password",
-				Email:     "Email",
-				Country:   "Country",
+				FirstName: "Already existing user id First Name",
+				LastName:  "Already existing user id Last name",
+				Nickname:  "Already existing user id Nickname",
+				Password:  "Already existing user id Password",
+				Email:     "Already existing user id Email",
+				Country:   "Already existing user id Country",
 				CreatedAt: time.Now().Add(-2 * time.Hour),
 				UpdatedAt: time.Now().Add(-2 * time.Hour),
 			},
-			true,
-			mongo.IsDuplicateKeyError,
+			false,
+			defaultIsErrorFunc,
 		},
 	} {
 		tc := tc
@@ -164,7 +164,7 @@ func TestMongoDBRepository_Create(t *testing.T) {
 				assert.Nilf(t, res, "Expected res to be nil, but was %s", res)
 				assert.True(t, tc.isErrorFunc(err), "Different error from expected one: %s", err)
 			} else {
-				assert.Nilf(t, res, "Expected err to be nil, but was %s", err)
+				assert.Nilf(t, err, "Expected err to be nil, but was %s", err)
 				require.NotNil(t, res, "Expected res not to be nil")
 
 				assert.Equalf(t, tc.user.FirstName, res.FirstName, "Expected FirstName to be %s, but was %s", tc.user.FirstName, res.FirstName)

@@ -2,10 +2,12 @@ package mongodb
 
 import (
 	"context"
-	"errors"
+	"time"
 	"user-microservice/internal/models"
 	"user-microservice/internal/users"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -22,6 +24,14 @@ func NewMongoDBRepository(db *mongo.Database) users.Repository {
 
 // Create - inserts the user into the database and returns it
 func (r mongodbRepository) Create(ctx context.Context, user models.User) (*models.User, error) {
+	user.ID = uuid.New()
+	user.CreatedAt = time.Now().UTC()
+	user.UpdatedAt = time.Now().UTC()
 
-	return nil, errors.New("Error not implemented")
+	if _, err := r.db.InsertOne(ctx, user); err != nil {
+		logrus.Errorf("Error in repository/mongodb.Create -> error: %s", err)
+		return nil, err
+	}
+
+	return &user, nil
 }
