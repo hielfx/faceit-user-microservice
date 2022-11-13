@@ -1,4 +1,7 @@
+bin/**
 test/**
+!test/coverage
+test/coverage/*
 !test/coverage/.gitkeep
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,go,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,go,macos

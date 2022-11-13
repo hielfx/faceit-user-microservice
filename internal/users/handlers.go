@@ -2,6 +2,7 @@ package users
 
 import "github.com/labstack/echo/v4"
 
+// Handler - user handlers
 type Handler interface {
-	Create(c echo.Context) error
+	CreateUser(c echo.Context) error
 }

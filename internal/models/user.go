@@ -14,6 +14,6 @@ type User struct {
 	Password  string    `json:"-"`
 	Email     string    `json:"email"`
 	Country   string    `json:"country"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

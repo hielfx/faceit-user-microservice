@@ -19,7 +19,7 @@ func NewHttpHandler(usersRepository users.Repository) users.Handler {
 }
 
 // TODO: Add Create comments
-func (h httpHandler) Create(c echo.Context) error {
+func (h httpHandler) CreateUser(c echo.Context) error {
 
 	return echo.NewHTTPError(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
 }
