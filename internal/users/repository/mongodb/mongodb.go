@@ -58,5 +58,10 @@ func (r mongodbRepository) Update(ctx context.Context, user models.User) (*model
 
 // DeleteById - removes the user with the given ID from the DB
 func (r mongodbRepository) DeleteById(ctx context.Context, id uuid.UUID) error {
-	return errors.New("Not implemented")
+	if _, err := r.db.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+		logrus.Errorf("Error in repository/mongodb.DeleteById -> error: %s", err)
+		return err
+	}
+
+	return nil
 }

@@ -203,12 +203,12 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 			uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
 			&models.User{
 				ID:        uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
-				FirstName: "Already inserted user first name",
-				LastName:  "Already inserted user last name",
-				Nickname:  "Already inserted user nickname",
-				Password:  "Already inserted user password",
-				Email:     "Already inserted user email",
-				Country:   "Already inserted user country",
+				FirstName: "Already inserted user first name 1",
+				LastName:  "Already inserted user last name 1",
+				Nickname:  "Already inserted user nickname 1",
+				Password:  "Already inserted user password 1",
+				Email:     "Already inserted user email 1",
+				Country:   "Already inserted user country 1",
 				CreatedAt: createdAt,
 				UpdatedAt: updatedAt,
 			},
@@ -223,6 +223,8 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Given
 			now := time.Now()
 			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
@@ -253,6 +255,50 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 				assert.True(t, res.UpdatedAt.Before(now), "Expected UpdatedAt to be before now but was %s", res.UpdatedAt)
 			}
 
+		})
+	}
+}
+
+func TestMongoDBRepository_DeleteById(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		id            uuid.UUID
+		expectedError error
+	}{
+		{
+			"Delete user by id successfully",
+			uuid.MustParse("19957751-A789-44D4-BC3B-87390B0E7C0A"),
+			nil,
+		},
+		{
+			"Delete user not found with error",
+			uuid.New(),
+			nil,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Given
+			mongoRepository := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			ctx := context.TODO()
+
+			// When
+			err := mongoRepository.DeleteById(ctx, tc.id)
+
+			// Then
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equalf(t, tc.expectedError, err, "Expected error to be %s, but was %s", tc.expectedError, err)
+			} else {
+				require.NoError(t, err)
+				//retrieve element from id and check the error
+				fromDB, err := mongoRepository.GetById(ctx, tc.id)
+				require.Error(t, err)
+				require.Nil(t, fromDB)
+				assert.Equal(t, mongo.ErrNoDocuments, err, "Expected error to be %s, but was %s", mongo.ErrNoDocuments, err)
+			}
 		})
 	}
 }
