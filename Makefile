@@ -5,7 +5,8 @@ BINNAME ?= users-microservice
 PKG := ./...
 LDFLAGS := -w -s
 CGO_ENABLED ?= 0
-TESTFLAGS := -v -race -failfast -cover -coverprofile=./test/coverage/c.out
+TEST_FLAGS := -v -race -failfast -cover -coverprofile=./test/coverage/c.out
+TEST_EXTRA_FLAGS ?= 
 
 .PHONY: all
 all: build
@@ -26,7 +27,7 @@ tidy:
 
 .PHONY: test
 test:
-	go test $(TESTFLAGS) ./...
+	go test $(TEST_FLAGS) $(TEST_EXTRA_FLAGS) ./...
 
 .PHONY: cover
 cover: test

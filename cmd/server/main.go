@@ -14,7 +14,8 @@ import (
 
 func main() {
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	mongoOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(context.TODO(), mongoOptions)
 	if err != nil {
 		logrus.Fatalln(err)
 		return

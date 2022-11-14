@@ -21,6 +21,8 @@ import (
 
 var dbClientTest *mongo.Client
 
+const databaseName = "test"
+
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -152,7 +154,7 @@ func TestMongoDBRepository_Create(t *testing.T) {
 
 			//Given
 			now := time.Now()
-			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database("mongo-test"))
+			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
 			ctx := context.TODO()
 
 			//When
@@ -181,6 +183,76 @@ func TestMongoDBRepository_Create(t *testing.T) {
 				assert.NotEqual(t, tc.user.UpdatedAt, res.UpdatedAt, "Expected UpdatedAt not to be equal")
 				assert.NotEqual(t, tc.user.ID, res.ID, "Expected ID not to be equal")
 			}
+		})
+	}
+}
+
+func TestMongoDBRepository_GetById(t *testing.T) {
+	createdAt, err := time.Parse("2006-01-02T15:04:05Z", "2016-05-18T16:00:00Z")
+	require.NoError(t, err, "Expected no error when initializing createdAt")
+	updatedAt, err := time.Parse("2006-01-02T15:04:05Z", "2016-05-18T16:00:00Z")
+	require.NoError(t, err, "Expected no error when initializing updatedAt")
+	for _, tc := range []struct {
+		name           string
+		id             uuid.UUID
+		expectedResult *models.User
+		expectedError  error
+	}{
+		{
+			"Get user by ID successfully",
+			uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
+			&models.User{
+				ID:        uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
+				FirstName: "Already inserted user first name",
+				LastName:  "Already inserted user last name",
+				Nickname:  "Already inserted user nickname",
+				Password:  "Already inserted user password",
+				Email:     "Already inserted user email",
+				Country:   "Already inserted user country",
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
+			nil,
+		},
+		{
+			"Get not found user by ID",
+			uuid.MustParse("C43DF343-FFB3-43DA-9BB0-B08B81E6FCD9"),
+			nil,
+			mongo.ErrNoDocuments,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Given
+			now := time.Now()
+			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			ctx := context.TODO()
+
+			// When
+			res, err := mongoRepo.GetById(ctx, tc.id)
+
+			// Then
+			if tc.expectedError != nil {
+				assert.Nilf(t, res, "Expected res to be nil but was %s", res)
+				assert.Error(t, err)
+				assert.Equalf(t, tc.expectedError, err, "Expected err to be %s, but was %s", tc.expectedError, err)
+			} else {
+				assert.NoErrorf(t, err, "Expected no error, but was %s", err)
+				require.NotNil(t, res, "Expected res not to be nil")
+				assert.Equalf(t, tc.id, res.ID, "Expected ID to be %s, but was %s", tc.id, res.ID)
+				assert.Equalf(t, tc.expectedResult.FirstName, res.FirstName, "Expected FirstName to be %s, but was %s", tc.expectedResult.FirstName, res.FirstName)
+				assert.Equalf(t, tc.expectedResult.LastName, res.LastName, "Expected LastName to be %s, but was %s", tc.expectedResult.LastName, res.LastName)
+				assert.Equalf(t, tc.expectedResult.Nickname, res.Nickname, "Expected Nickname to be %s, but was %s", tc.expectedResult.Nickname, res.Nickname)
+				assert.Equalf(t, tc.expectedResult.Password, res.Password, "Expected Password to be %s, but was %s", tc.expectedResult.Password, res.Password)
+				assert.Equalf(t, tc.expectedResult.Email, res.Email, "Expected Email to be %s, but was %s", tc.expectedResult.Email, res.Email)
+				assert.Equalf(t, tc.expectedResult.Country, res.Country, "Expected Country to be %s, but was %s", tc.expectedResult.Country, res.Country)
+				assert.Equalf(t, tc.expectedResult.CreatedAt, res.CreatedAt, "Expected CreatedAt to be %s, but was %s", tc.expectedResult.CreatedAt, res.CreatedAt)
+				assert.Equalf(t, tc.expectedResult.UpdatedAt, res.UpdatedAt, "Expected UpdatedAt to be %s, but was %s", tc.expectedResult.UpdatedAt, res.UpdatedAt)
+
+				assert.True(t, res.CreatedAt.Before(now), "Expected CreatedAt to be before now but was %s", res.CreatedAt)
+				assert.True(t, res.UpdatedAt.Before(now), "Expected UpdatedAt to be before now but was %s", res.UpdatedAt)
+			}
+
 		})
 	}
 }
