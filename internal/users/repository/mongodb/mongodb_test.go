@@ -135,7 +135,7 @@ func TestMongoDBRepository_Create(t *testing.T) {
 		{
 			"Create user with already existing ID",
 			models.User{
-				ID:        uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
+				ID:        uuid.MustParse("29621CF9C9894266A5A2085FD99A75E1"),
 				FirstName: "Already existing user id First Name",
 				LastName:  "Already existing user id Last name",
 				Nickname:  "Already existing user id Nickname",
@@ -154,7 +154,7 @@ func TestMongoDBRepository_Create(t *testing.T) {
 			t.Parallel()
 
 			//Given
-			now := time.Now()
+			now := time.Now().UTC().Add(-1 * time.Minute)
 			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
 			ctx := context.TODO()
 
@@ -201,9 +201,9 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 	}{
 		{
 			"Get user by ID successfully",
-			uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
+			uuid.MustParse("0889A9BDB7084A6898F0D0BADE13B5F3"),
 			&models.User{
-				ID:        uuid.MustParse("29621CF9-C989-4266-A5A2-085FD99A75E1"),
+				ID:        uuid.MustParse("0889A9BDB7084A6898F0D0BADE13B5F3"),
 				FirstName: "Already inserted user first name 1",
 				LastName:  "Already inserted user last name 1",
 				Nickname:  "Already inserted user nickname 1",
@@ -217,7 +217,7 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 		},
 		{
 			"Get not found user by ID",
-			uuid.MustParse("C43DF343-FFB3-43DA-9BB0-B08B81E6FCD9"),
+			uuid.MustParse("C43DF343FFB343DA9BB0B08B81E6FCD9"),
 			nil,
 			mongo.ErrNoDocuments,
 		},
@@ -227,7 +227,7 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 			t.Parallel()
 
 			// Given
-			now := time.Now()
+			now := time.Now().UTC().Add(-1 * time.Minute)
 			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
 			ctx := context.TODO()
 
@@ -268,7 +268,7 @@ func TestMongoDBRepository_DeleteById(t *testing.T) {
 	}{
 		{
 			"Delete user by id successfully",
-			uuid.MustParse("19957751-A789-44D4-BC3B-87390B0E7C0A"),
+			uuid.MustParse("19957751A78944D4BC3B87390B0E7C0A"),
 			nil,
 		},
 		{
@@ -430,6 +430,97 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				assert.Greaterf(t, res.TotalPages, int64(0), "Expected TotalPages to be greater than %d, but was %d", int64(0), res.TotalPages)
 			}
 
+		})
+	}
+}
+
+func TestMongoDBRepository_UpdateUser(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		user          models.User
+		expectedError error
+	}{
+		{
+			"Update user successfully",
+			models.User{
+				ID:        uuid.MustParse("B0DD43EE6BBA49A5929C9A880CFCB285"),
+				FirstName: "Modified FirstName",
+				LastName:  "Modified LastName",
+				Nickname:  "Modified Nickname",
+				Password:  "Modified Password",
+				Email:     "Modified Email",
+				Country:   "Modified Country",
+			},
+			nil,
+		},
+		{
+			"Update user successfully with empty values",
+			models.User{
+				ID:        uuid.MustParse("88A094E8F65E45709B244DBFD38D9808"),
+				FirstName: "",
+				LastName:  "",
+				Nickname:  "",
+				Password:  "",
+				Email:     "",
+				Country:   "",
+			},
+			nil,
+		},
+		{
+			"Update user successfully without modifying dates",
+			models.User{
+				ID:        uuid.MustParse("EB8BA910080A4309937A3D611CDD6B72"),
+				FirstName: "Modified FirstName",
+				LastName:  "Modified LastName",
+				Nickname:  "Modified Nickname",
+				Password:  "Modified Password",
+				Email:     "Modified Email",
+				Country:   "Modified Country",
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
+			},
+			nil,
+		},
+		{
+			"Update user with not found ID",
+			models.User{
+				ID: uuid.MustParse("B535F5174BE244DF820D3C3F886DA2A2"),
+			},
+			mongo.ErrNoDocuments,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			//Given
+			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			ctx := context.TODO()
+			now := time.Now().UTC().Add(-1 * time.Minute)
+
+			//When
+			res, err := mongoRepo.Update(ctx, tc.user)
+
+			//Then
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				assert.Nil(t, res)
+				assert.Equalf(t, tc.expectedError, err, "Expected err to be %v, but was %v", tc.expectedError, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, res, "Expected res not to be nil")
+
+				assert.Equalf(t, tc.user.ID, res.ID, "Expected ID to be %s, but was %s", tc.user.ID, res.ID)
+				assert.Equalf(t, tc.user.FirstName, res.FirstName, "Expected FirstName to be %s, but was %s", tc.user.FirstName, res.FirstName)
+				assert.Equalf(t, tc.user.LastName, res.LastName, "Expected LastName to be %s, but was %s", tc.user.LastName, res.LastName)
+				assert.Equalf(t, tc.user.Nickname, res.Nickname, "Expected Nickname to be %s, but was %s", tc.user.Nickname, res.Nickname)
+				assert.Equalf(t, tc.user.Password, res.Password, "Expected Password to be %s, but was %s", tc.user.Password, res.Password)
+				assert.Equalf(t, tc.user.Email, res.Email, "Expected Email to be %s, but was %s", tc.user.Email, res.Email)
+				assert.Equalf(t, tc.user.Country, res.Country, "Expected Country to be %s, but was %s", tc.user.Country, res.Country)
+
+				// assert.Truef(t, res.CreatedAt.Before(now), "Expected CreatedAt to be before %s but was %s", now, res.CreatedAt)
+				assert.Truef(t, res.UpdatedAt.After(now), "Expected UpdatedAt to be after %s but was %s", now, res.UpdatedAt)
+			}
 		})
 	}
 }

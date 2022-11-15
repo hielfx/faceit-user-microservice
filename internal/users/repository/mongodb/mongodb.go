@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"errors"
 	"math"
 	"time"
 	"user-microservice/internal/models"
@@ -30,6 +29,8 @@ func NewMongoDBRepository(db *mongo.Database) users.Repository {
 // Create - inserts the user into the database and returns the updated version
 func (r mongodbRepository) Create(ctx context.Context, user models.User) (*models.User, error) {
 	user.ID = uuid.New()
+	str := user.ID.String()
+	_ = str
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
 
@@ -44,7 +45,7 @@ func (r mongodbRepository) Create(ctx context.Context, user models.User) (*model
 // GetById - retrieves the user with the given ID
 func (r mongodbRepository) GetById(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var res models.User
-	if err := r.db.FindOne(ctx, bson.M{"id": id}).Decode(&res); err != nil {
+	if err := r.db.FindOne(ctx, bson.M{"_id": id}).Decode(&res); err != nil {
 		if err != mongo.ErrNoDocuments {
 			logrus.Errorf("Error in repository/mongodb.GetById -> error: %s", err)
 		}
@@ -56,12 +57,28 @@ func (r mongodbRepository) GetById(ctx context.Context, id uuid.UUID) (*models.U
 
 // Update - updates the user in the DB and returns the updated version
 func (r mongodbRepository) Update(ctx context.Context, user models.User) (*models.User, error) {
-	return nil, errors.New("Not implemented")
+	user.UpdatedAt = time.Now().UTC()
+	if _, err := r.db.ReplaceOne(ctx, bson.M{"_id": user.ID}, user); err != nil {
+		if err != mongo.ErrNoDocuments {
+			logrus.Errorf("Error in repository/mongodb.Update -> error updating document: %s", err)
+		}
+		return nil, err
+	}
+
+	var res models.User
+	if err := r.db.FindOne(ctx, bson.M{"_id": user.ID}).Decode(&res); err != nil {
+		if err != mongo.ErrNoDocuments {
+			logrus.Errorf("Error in repository/mongodb.Update -> error retrieving document: %s", err)
+		}
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 // DeleteById - removes the user with the given ID from the DB
 func (r mongodbRepository) DeleteById(ctx context.Context, id uuid.UUID) error {
-	if _, err := r.db.DeleteOne(ctx, bson.M{"id": id}); err != nil {
+	if _, err := r.db.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
 		logrus.Errorf("Error in repository/mongodb.DeleteById -> error: %s", err)
 		return err
 	}
