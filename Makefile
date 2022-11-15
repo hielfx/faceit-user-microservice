@@ -32,3 +32,10 @@ test:
 .PHONY: cover
 cover: test
 	go tool cover -html=./test/coverage/c.out
+
+$(MOCKGEN):
+	(cd /; GO111MODULE=on go install github.com/golang/mock/mockgen@v1.6.0)
+
+.PHONY: generate
+generate: $(MOCKGEN)
+	go generate ./...

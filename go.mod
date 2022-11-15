@@ -3,9 +3,9 @@ module user-microservice
 go 1.19
 
 require (
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.9.1
-	github.com/magiconair/properties v1.8.6
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.7.1

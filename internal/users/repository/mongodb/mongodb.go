@@ -21,6 +21,9 @@ type mongodbRepository struct {
 	db *mongo.Collection
 }
 
+var _ users.Repository = mongodbRepository{}
+var _ users.Repository = (*mongodbRepository)(nil)
+
 // NewMongoDBRepository - returns a new instance for the mongodb repository
 func NewMongoDBRepository(db *mongo.Database) users.Repository {
 	return &mongodbRepository{db.Collection(mongodbCollection)}
@@ -29,8 +32,6 @@ func NewMongoDBRepository(db *mongo.Database) users.Repository {
 // Create - inserts the user into the database and returns the updated version
 func (r mongodbRepository) Create(ctx context.Context, user models.User) (*models.User, error) {
 	user.ID = uuid.New()
-	str := user.ID.String()
-	_ = str
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
 
