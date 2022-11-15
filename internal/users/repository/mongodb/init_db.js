@@ -1,6 +1,6 @@
 db.users.insertMany([
   {
-    _id: Binary(Buffer.from("29621cf9c9894266a5a2085fd99a75e1", "hex"), 0),
+    id: Binary(Buffer.from("29621cf9c9894266a5a2085fd99a75e1", "hex"), 0),
     first_name: "Already inserted user first name 1",
     last_name: "Already inserted user last name 1",
     nickname: "Already inserted user nickname 1",
@@ -11,7 +11,7 @@ db.users.insertMany([
     updated_at: new Date("2016-05-18T16:00:00Z"),
   },
   {
-    _id: Binary(Buffer.from("19957751-A789-44D4-BC3B-87390B0E7C0A", "hex"), 0),
+    id: Binary(Buffer.from("19957751-A789-44D4-BC3B-87390B0E7C0A", "hex"), 0),
     first_name: "User to delete first name 2",
     last_name: "User to delete last name 2",
     nickname: "User to delete nickname 2",
@@ -22,7 +22,7 @@ db.users.insertMany([
     updated_at: new Date("2017-05-18T16:00:00Z"),
   },
   {
-    _id: Binary(Buffer.from("B0DD43EE-6BBA-49A5-929C-9A880CFCB285", "hex"), 0),
+    id: Binary(Buffer.from("B0DD43EE-6BBA-49A5-929C-9A880CFCB285", "hex"), 0),
     first_name: "Already inserted user first name 3",
     last_name: "Already inserted user last name 3",
     nickname: "Already inserted user nickname 3",
@@ -33,7 +33,7 @@ db.users.insertMany([
     updated_at: new Date("2018-05-18T16:00:00Z"),
   },
   {
-    _id: Binary(Buffer.from("A6704CAB-EBB0-4679-B464-3DCA316DC74F", "hex"), 0),
+    id: Binary(Buffer.from("A6704CAB-EBB0-4679-B464-3DCA316DC74F", "hex"), 0),
     first_name: "Already inserted user first name 4",
     last_name: "Already inserted user last name 4",
     nickname: "Already inserted user nickname 4",
@@ -44,7 +44,29 @@ db.users.insertMany([
     updated_at: new Date("2019-05-18T16:00:00Z"),
   },
   {
-    _id: Binary(Buffer.from("B5B02F0A-B3DB-4D09-B8D7-A0F4DB2E2091", "hex"), 0),
+    id: Binary(Buffer.from("B5B02F0A-B3DB-4D09-B8D7-A0F4DB2E2091", "hex"), 0),
+    first_name: "Already inserted user first name 5",
+    last_name: "Already inserted user last name 5",
+    nickname: "Already inserted user nickname 5",
+    password: "Already inserted user password 5",
+    email: "Already inserted user email 5",
+    country: "Already inserted user country 5",
+    created_at: new Date("2020-05-18T16:00:00Z"),
+    updated_at: new Date("2020-05-18T16:00:00Z"),
+  },
+  {
+    id: Binary(Buffer.from("88A094E8-F65E-4570-9B24-4DBFD38D9808", "hex"), 0),
+    first_name: "Already inserted user first name 6",
+    last_name: "Already inserted user last name 6",
+    nickname: "Already inserted user nickname 6",
+    password: "Already inserted user password 6",
+    email: "Already inserted user email 6",
+    country: "Already inserted user country 6",
+    created_at: new Date("2021-05-18T16:00:00Z"),
+    updated_at: new Date("2021-05-18T16:00:00Z"),
+  },
+  {
+    id: Binary(Buffer.from("B5B02F0A-B3DB-4D09-B8D7-A0F4DB2E2091", "hex"), 0),
     first_name: "Already inserted user first name 5",
     last_name: "Already inserted user last name 5",
     nickname: "Already inserted user nickname 5",

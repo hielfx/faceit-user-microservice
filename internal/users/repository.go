@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"user-microservice/internal/models"
+	"user-microservice/internal/pagination"
 
 	"github.com/google/uuid"
 )
@@ -13,4 +14,5 @@ type Repository interface {
 	GetById(ctx context.Context, id uuid.UUID) (*models.User, error)
 	Update(ctx context.Context, user models.User) (*models.User, error)
 	DeleteById(ctx context.Context, id uuid.UUID) error
+	GetPaginatedUsers(ctx context.Context, pagination pagination.PaginationOptions) (models.PaginatedUsers, error)
 }

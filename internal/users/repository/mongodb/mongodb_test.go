@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 	"user-microservice/internal/models"
+	"user-microservice/internal/pagination"
 	"user-microservice/internal/users/repository/mongodb"
 
 	"github.com/google/uuid"
@@ -175,8 +176,8 @@ func TestMongoDBRepository_Create(t *testing.T) {
 				assert.Equalf(t, tc.user.Password, tc.user.Password, "Expected Password to be %s, but was %s", tc.user.Password, tc.user.Password)
 				assert.Equalf(t, tc.user.Email, tc.user.Email, "Expected Email to be %s, but was %s", tc.user.Email, tc.user.Email)
 				assert.Equalf(t, tc.user.Country, tc.user.Country, "Expected Country to be %s, but was %s", tc.user.Country, tc.user.Country)
-				assert.Truef(t, res.CreatedAt.After(now), "Expecrted CreatedAt to be after %s, but was %s", now, res.CreatedAt)
-				assert.Truef(t, res.UpdatedAt.After(now), "Expecrted UpdatedAt to be after %s, but was %s", now, res.UpdatedAt)
+				assert.Truef(t, res.CreatedAt.After(now), "Expected CreatedAt to be after %s, but was %s", now, res.CreatedAt)
+				assert.Truef(t, res.UpdatedAt.After(now), "Expected UpdatedAt to be after %s, but was %s", now, res.UpdatedAt)
 
 				//We assert this because the creation method should override CreatedAt, UpdatedAt and ID
 				assert.NotEqual(t, tc.user.CreatedAt, res.CreatedAt, "Expected CreatedAt not to be equal")
@@ -299,6 +300,136 @@ func TestMongoDBRepository_DeleteById(t *testing.T) {
 				require.Nil(t, fromDB)
 				assert.Equal(t, mongo.ErrNoDocuments, err, "Expected error to be %s, but was %s", mongo.ErrNoDocuments, err)
 			}
+		})
+	}
+}
+
+type expected struct {
+	err         error
+	equalLength bool
+	equalPage   bool
+	equalSize   bool
+	hasMore     bool
+}
+
+func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		pgOpts   pagination.PaginationOptions
+		expected expected
+	}{
+		{
+			"Get paginated users with all pgOptions success",
+			pagination.PaginationOptions{
+				Page: 2,
+				Size: 2,
+				// OrderBy:   "_id",
+				// SortOrder: pagination.SortOrderAsc,
+			},
+			expected{
+				equalLength: true,
+				equalPage:   true,
+				equalSize:   true,
+				hasMore:     true,
+			},
+		},
+		{
+			"Get paginated users with negative page",
+			pagination.PaginationOptions{
+				Page: -1,
+				Size: 2,
+			},
+			expected{
+				equalSize:   true,
+				equalLength: true,
+				hasMore:     true,
+			},
+		},
+		{
+			"Get paginated users with negative size",
+			pagination.PaginationOptions{
+				Page: 2,
+				Size: -1,
+			},
+			expected{
+				equalPage: true,
+				hasMore:   false,
+			},
+		},
+		{
+			"Get paginated users with negative page and size",
+			pagination.PaginationOptions{
+				Page: -1,
+				Size: -1,
+			},
+			expected{
+				hasMore: false,
+			},
+		},
+		{
+			"Get paginated users with zero values",
+			pagination.PaginationOptions{},
+			expected{
+				hasMore: false,
+			},
+		},
+		{
+			"Get paginated users with high size",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 100,
+			},
+			expected{
+				hasMore:   false,
+				equalPage: true,
+				equalSize: true,
+			},
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			//Given
+			mongoRepository := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			ctx := context.TODO()
+
+			//When
+			res, err := mongoRepository.GetPaginatedUsers(ctx, tc.pgOpts)
+
+			//Then
+			if tc.expected.err != nil {
+				require.Error(t, err)
+				require.Equal(t, tc.expected.err, err)
+			} else {
+				require.NoError(t, err)
+
+				if tc.expected.equalPage {
+					assert.Equalf(t, tc.pgOpts.Page, res.CurrentPage, "Expected CurrentPage to be equal to %d, but was %d", tc.pgOpts.Page, res.CurrentPage)
+				} else {
+					assert.NotEqualf(t, tc.pgOpts.Page, res.CurrentPage, "Expected CurrentPage to be different to %d", tc.pgOpts.Page)
+				}
+				assert.Greaterf(t, res.CurrentPage, 0, "Expected CurrentPage to be greater than %d, but was %d", 0, res.CurrentPage)
+
+				if tc.expected.equalSize {
+					assert.Equalf(t, tc.pgOpts.Size, res.Size, "Expected Size to be equal to %d, but was %d", tc.pgOpts.Size, res.Size)
+				} else {
+					assert.NotEqualf(t, tc.pgOpts.Size, res.Size, "Expected Size to be different to %d", tc.pgOpts.Size)
+				}
+				assert.Greaterf(t, res.Size, 0, "Expected size to be greater than %d, but was %d", 0, res.Size)
+
+				if tc.expected.equalLength {
+					assert.Equalf(t, tc.pgOpts.Size, len(res.Users), "Expected Users length to be equal to %d, but was %d", tc.pgOpts.Size, len(res.Users))
+				} else {
+					assert.NotEqualf(t, tc.pgOpts.Size, len(res.Users), "Expected Users length to be different to %d", tc.pgOpts.Size)
+				}
+				assert.Greaterf(t, len(res.Users), 0, "Expected Users length to be greater than %d, but was %d", 0, len(res.Users))
+
+				assert.Equalf(t, tc.expected.hasMore, res.HasMore, "Expected HasMore to be %t but was %t", tc.expected.hasMore, res.HasMore)
+				assert.Greater(t, res.TotalCount, int64(0), "Expected TotalCount to be greater than %d, but was %d", int64(0), res.TotalCount)
+				assert.Greaterf(t, res.TotalPages, int64(0), "Expected TotalPages to be greater than %d, but was %d", int64(0), res.TotalPages)
+			}
+
 		})
 	}
 }
