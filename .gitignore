@@ -1,8 +1,9 @@
+__debug_bin
 bin/**
-test/**
 !test/coverage
 test/coverage/*
 !test/coverage/.gitkeep
+!test/e2e/api/*
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,go,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,go,macos
 

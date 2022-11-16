@@ -49,17 +49,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			"Create user with empty body",
 			`{}`,
-			&models.User{
-				ID:        uuid.New(),
-				FirstName: "CreateUser FirstName",
-				LastName:  "CreateUser LastName",
-				Nickname:  "CreateUser Nickname",
-				Password:  "CreateUser Password",
-				Email:     "CreateUser Email",
-				Country:   "CreateUser Country",
-				CreatedAt: time.Now().UTC(),
-				UpdatedAt: time.Now().UTC(),
-			},
+			nil,
 			http.StatusBadRequest,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 		},
@@ -83,7 +73,7 @@ func TestCreateUser(t *testing.T) {
 			echoCtx := e.NewContext(req, rec)
 			ctx := context.TODO()
 
-			mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(tc.mockedUser, tc.expectedError).AnyTimes()
+			mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(tc.mockedUser, tc.expectedError).Times(1)
 
 			// When
 			err := userHandler.CreateUser(echoCtx)

@@ -2,94 +2,24 @@ package mongodb_test
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
 	"time"
 	"user-microservice/internal/models"
 	"user-microservice/internal/pagination"
 	"user-microservice/internal/users/repository/mongodb"
+	"user-microservice/pkg/testutils"
 
 	"github.com/google/uuid"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var dbClientTest *mongo.Client
 
-const databaseName = "test"
-
 func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		logrus.Fatalf("Could not connect to docker: %s", err)
-		return
-	}
-
-	dir, err := os.Getwd()
-	if err != nil {
-		logrus.Fatalf("Error retrieving working directory: %s", err)
-		return
-	}
-
-	//pull mongodb docker image
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "mongo",
-		Tag:        "6",
-		Env:        []string{},
-		Mounts: []string{
-			dir + "/init_db.js:/docker-entrypoint-initdb.d/init_db.js",
-		},
-	}, func(config *docker.HostConfig) {
-		// set AutoRemove to true so that stopped container goes away by itself
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
-	})
-	if err != nil {
-		logrus.Fatalf("Could start docker reouser: %s", err)
-		return
-	}
-
-	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
-	err = pool.Retry(func() error {
-		var err error
-		dbClientTest, err = mongo.Connect(
-			context.TODO(),
-			options.Client().ApplyURI(
-				fmt.Sprintf("mongodb://localhost:%s", resource.GetPort("27017/tcp")),
-			),
-		)
-		if err != nil {
-			return err
-		}
-		return dbClientTest.Ping(context.TODO(), nil)
-	})
-	if err != nil {
-		logrus.Fatalf("Could not connect to docker: %s", err)
-	}
-
-	// run tests
-	code := m.Run()
-
-	// When you're done, kill and remove the container
-	if err = pool.Purge(resource); err != nil {
-		logrus.Fatalf("Could not purge resource: %s", err)
-	}
-
-	// disconnect mongodb client
-	if err = dbClientTest.Disconnect(context.TODO()); err != nil {
-		panic(err)
-	}
-
-	os.Exit(code)
-
+	dbClientTest = new(mongo.Client)
+	testutils.ExecuteTestMain(m, dbClientTest)
 }
 
 type isErrorFunc func(error) bool
@@ -155,7 +85,8 @@ func TestMongoDBRepository_Create(t *testing.T) {
 
 			//Given
 			now := time.Now().UTC().Add(-1 * time.Minute)
-			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			db := dbClientTest
+			mongoRepo := mongodb.NewMongoDBRepository(testutils.GetDatabaseFromClient(db))
 			ctx := context.TODO()
 
 			//When
@@ -228,7 +159,7 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 
 			// Given
 			now := time.Now().UTC().Add(-1 * time.Minute)
-			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			mongoRepo := mongodb.NewMongoDBRepository(testutils.GetDatabaseFromClient(dbClientTest))
 			ctx := context.TODO()
 
 			// When
@@ -282,7 +213,7 @@ func TestMongoDBRepository_DeleteById(t *testing.T) {
 			t.Parallel()
 
 			// Given
-			mongoRepository := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			mongoRepository := mongodb.NewMongoDBRepository(testutils.GetDatabaseFromClient(dbClientTest))
 			ctx := context.TODO()
 
 			// When
@@ -391,7 +322,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 			t.Parallel()
 
 			//Given
-			mongoRepository := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			mongoRepository := mongodb.NewMongoDBRepository(testutils.GetDatabaseFromClient(dbClientTest))
 			ctx := context.TODO()
 
 			//When
@@ -494,7 +425,7 @@ func TestMongoDBRepository_UpdateUser(t *testing.T) {
 			t.Parallel()
 
 			//Given
-			mongoRepo := mongodb.NewMongoDBRepository(dbClientTest.Database(databaseName))
+			mongoRepo := mongodb.NewMongoDBRepository(testutils.GetDatabaseFromClient(dbClientTest))
 			ctx := context.TODO()
 			now := time.Now().UTC().Add(-1 * time.Minute)
 
