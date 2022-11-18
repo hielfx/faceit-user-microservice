@@ -2,10 +2,12 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"user-microservice/internal/models"
 	"user-microservice/internal/users"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -17,6 +19,7 @@ type httpHandler struct {
 var _ users.Handler = httpHandler{}
 var _ users.Handler = (*httpHandler)(nil)
 
+// NewHttpHandler - returns a new user http handler initialized with the repository
 func NewHttpHandler(usersRepository users.Repository) users.Handler {
 	return &httpHandler{usersRepository}
 }
@@ -56,6 +59,15 @@ func (h httpHandler) UpdateUserByID(c echo.Context) error {
 }
 
 func (h httpHandler) DeleteUserByID(c echo.Context) error {
-	//TODO: Implement method
-	return echo.NewHTTPError(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
+	idStr := c.Param("userId")
+	userID, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid ID %s", idStr))
+	}
+
+	if err := h.repository.DeleteById(context.TODO(), userID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }

@@ -1,3 +1,4 @@
+//go:generate mockgen -source handlers.go -destination mock/handlers_mock.go -package mock
 package users
 
 import "github.com/labstack/echo/v4"

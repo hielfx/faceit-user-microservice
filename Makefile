@@ -2,11 +2,13 @@ MAINPATH := ./cmd/server
 BINDIR := $(CURDIR)/bin
 BINNAME ?= users-microservice
 
+GOBIN ?= $(shell which go)
+
 PKG := ./...
 LDFLAGS := -w -s
 CGO_ENABLED ?= 0
-TEST_FLAGS := -v -race -failfast -cover -coverprofile=./test/coverage/c.out
-TEST_EXTRA_FLAGS ?= 
+TEST_FLAGS := -race -failfast -cover -coverprofile=./test/coverage/c.out
+EXTRA_TEST_FLAGS ?= -v
 
 .PHONY: all
 all: build
@@ -15,27 +17,30 @@ all: build
 build: $(BINDIR)/$(BINNAME)
 
 $(BINDIR)/$(BINNAME):
-	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) go build -trimpath -ldflags '$(LDFLAGS)' -o '$(BINDIR)'/$(BINNAME) $(MAINPATH)
+	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) $(GOBIN) build -trimpath -ldflags '$(LDFLAGS)' -o '$(BINDIR)'/$(BINNAME) $(MAINPATH)
 
 .PHONY: run
 run:
-	go run $(MAIN_PATH)
+	$(GOBIN) run $(MAIN_PATH)
 
 .PHONY: tidy
 tidy:
-	go mod tidy
+	$(GOBIN) mod tidy
 
 .PHONY: test
 test:
-	go test $(TEST_FLAGS) $(TEST_EXTRA_FLAGS) ./...
+	$(GOBIN) test $(TEST_FLAGS) $(EXTRA_TEST_FLAGS) ./...
 
 .PHONY: cover
 cover: test
-	go tool cover -html=./test/coverage/c.out
+	$(GOBIN) tool cover -html=./test/coverage/c.out
+
+.PHONY: coverage
+coverage: cover
 
 $(MOCKGEN):
-	(cd /; GO111MODULE=on go install github.com/golang/mock/mockgen@v1.6.0)
+	(cd /; GO111MODULE=on $(GOBIN) install github.com/golang/mock/mockgen@v1.6.0)
 
 .PHONY: generate
 generate: $(MOCKGEN)
-	go generate ./...
+	$(GOBIN) generate ./...

@@ -6,8 +6,8 @@ import (
 	"time"
 	"user-microservice/internal/models"
 	"user-microservice/internal/pagination"
+	"user-microservice/internal/testutils"
 	"user-microservice/internal/users/repository/mongodb"
-	"user-microservice/pkg/testutils"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -102,11 +102,11 @@ func TestMongoDBRepository_Create(t *testing.T) {
 				require.NotNil(t, res, "Expected res not to be nil")
 
 				assert.Equalf(t, tc.user.FirstName, res.FirstName, "Expected FirstName to be %s, but was %s", tc.user.FirstName, res.FirstName)
-				assert.Equalf(t, tc.user.LastName, tc.user.LastName, "Expected LastName to be %s, but was %s", tc.user.LastName, tc.user.LastName)
-				assert.Equalf(t, tc.user.Nickname, tc.user.Nickname, "Expected Nickname to be %s, but was %s", tc.user.Nickname, tc.user.Nickname)
-				assert.Equalf(t, tc.user.Password, tc.user.Password, "Expected Password to be %s, but was %s", tc.user.Password, tc.user.Password)
-				assert.Equalf(t, tc.user.Email, tc.user.Email, "Expected Email to be %s, but was %s", tc.user.Email, tc.user.Email)
-				assert.Equalf(t, tc.user.Country, tc.user.Country, "Expected Country to be %s, but was %s", tc.user.Country, tc.user.Country)
+				assert.Equalf(t, tc.user.LastName, res.LastName, "Expected LastName to be %s, but was %s", tc.user.LastName, tc.user.LastName)
+				assert.Equalf(t, tc.user.Nickname, res.Nickname, "Expected Nickname to be %s, but was %s", tc.user.Nickname, tc.user.Nickname)
+				assert.Equalf(t, tc.user.Password, res.Password, "Expected Password to be %s, but was %s", tc.user.Password, tc.user.Password)
+				assert.Equalf(t, tc.user.Email, res.Email, "Expected Email to be %s, but was %s", tc.user.Email, tc.user.Email)
+				assert.Equalf(t, tc.user.Country, res.Country, "Expected Country to be %s, but was %s", tc.user.Country, tc.user.Country)
 				assert.Truef(t, res.CreatedAt.After(now), "Expected CreatedAt to be after %s, but was %s", now, res.CreatedAt)
 				assert.Truef(t, res.UpdatedAt.After(now), "Expected UpdatedAt to be after %s, but was %s", now, res.UpdatedAt)
 
