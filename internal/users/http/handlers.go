@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type httpHandler struct {
@@ -49,8 +50,22 @@ func (h httpHandler) GetAllUsers(c echo.Context) error {
 }
 
 func (h httpHandler) GetUserByID(c echo.Context) error {
-	//TODO: Implement method
-	return echo.NewHTTPError(http.StatusNotImplemented, http.StatusText(http.StatusNotImplemented))
+	userIDstr := c.Param("userId")
+	userID, err := uuid.Parse(userIDstr)
+	if err != nil {
+		logrus.Errorf("Error in users/http.GetUserByID -> error parsing user ID: %s", err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid user ID %s", userIDstr))
+	}
+
+	user, err := h.repository.GetById(context.TODO(), userID)
+	if err != nil {
+		if err == mongo.ErrNilDocument {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User not found for ID %s", userID))
+		}
+		return err
+	}
+
+	return c.JSON(http.StatusOK, user)
 }
 
 func (h httpHandler) UpdateUserByID(c echo.Context) error {

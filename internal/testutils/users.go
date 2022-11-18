@@ -10,6 +10,7 @@ import (
 // AssertUserConfig - extra configuration for test assertion
 type AssertUserConfig struct {
 	EqualPasswords bool
+	EmptyPassword  bool
 	CreatedAt      *DateCheck
 	UpdatedAt      *DateCheck
 }
@@ -22,6 +23,9 @@ func AssertUserBody(t *testing.T, expected models.User, result models.User, cfg 
 	assert.Equalf(t, expected.Nickname, result.Nickname, "Expected Nickname to be %s, but was %s", expected.Nickname, result.Nickname)
 	if cfg.EqualPasswords {
 		assert.Equalf(t, expected.Password, result.Password, "Expected Password to be %s, but was %s", expected.Password, result.Password)
+	}
+	if cfg.EmptyPassword {
+		assert.Empty(t, result.Password, "Expected Password to be empty but was %s", result.Password)
 	}
 	assert.Equalf(t, expected.Email, result.Email, "Expected Email to be %s, but was %s", expected.Email, result.Email)
 	assert.Equalf(t, expected.Country, result.Country, "Expected Country to be %s, but was %s", expected.Country, result.Country)

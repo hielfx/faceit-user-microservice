@@ -3,6 +3,8 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -211,7 +213,7 @@ func TestDeleteUser(t *testing.T) {
 
 func TestGetUserByID(t *testing.T) {
 	userUUID := uuid.New()
-	_ = userUUID //TODO: Delete this
+	now := time.Now().UTC().Add(-1 * time.Minute)
 	for _, tc := range []struct {
 		name           string
 		id             string
@@ -222,7 +224,56 @@ func TestGetUserByID(t *testing.T) {
 		expectedError  error
 		shouldCallMock bool
 	}{
-		//TODO: Add test cases here
+		{
+			"Get user successfully by id",
+			userUUID.String(),
+			userUUID,
+			&models.User{
+				ID:        userUUID,
+				FirstName: "Retrieved user FirstName",
+				LastName:  "Retrieved user LastName",
+				Nickname:  "Retrieved user Nickname",
+				Password:  "Retrieved user Password",
+				Email:     "Retrieved user Email",
+				Country:   "Retrieved user Country",
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+			nil,
+			http.StatusOK,
+			nil,
+			true,
+		},
+		{
+			"Get user id not found error",
+			userUUID.String(),
+			userUUID,
+			nil,
+			mongo.ErrNilDocument,
+			http.StatusNotFound,
+			echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User not found for ID %s", userUUID.String())),
+			true,
+		},
+		{
+			"Get user invalid id error",
+			"invalid-id",
+			userUUID,
+			nil,
+			nil,
+			http.StatusBadRequest,
+			echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID invalid-id"),
+			false,
+		},
+		{
+			"Get user internal server error",
+			userUUID.String(),
+			userUUID,
+			nil,
+			errors.New("homemade error"),
+			http.StatusInternalServerError,
+			errors.New("homemade error"),
+			true,
+		},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -255,33 +306,34 @@ func TestGetUserByID(t *testing.T) {
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				echoError, isOK := err.(*echo.HTTPError)
-				if assert.True(t, isOK) {
+				if isOK {
 					assert.Equalf(t, tc.expectedCode, echoError.Code, "Expected code to be %d, but was %d", tc.expectedCode, echoError.Code)
 					expectedEchoError, isOK := tc.expectedError.(*echo.HTTPError)
 					if assert.True(t, isOK) {
 						assert.Equalf(t, expectedEchoError, echoError, "Expected expectedEchoError to be %s, but was %s", expectedEchoError, echoError)
 					}
 				} else {
-					require.Nil(t, err)
-					assert.Equalf(t, http.StatusOK, rec.Code, "Expected status code to be %d, but was %d", http.StatusOK, rec.Code)
-
-					var body models.User
-					err := json.Unmarshal(rec.Body.Bytes(), &body)
-					require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
-
-					testutils.AssertUserBody(t, *tc.mockedUser, body, testutils.AssertUserConfig{
-						CreatedAt: &testutils.DateCheck{
-							Option: testutils.DateCheckOptionEquals,
-							Value:  tc.mockedUser.CreatedAt,
-						},
-						UpdatedAt: &testutils.DateCheck{
-							Option: testutils.DateCheckOptionEquals,
-							Value:  tc.mockedUser.UpdatedAt,
-						},
-						EqualPasswords: true,
-					})
-					//TODO: Assert password here
+					require.Equalf(t, tc.expectedError, err, "Expected err to be %s, but was %s", tc.expectedError, err)
 				}
+			} else {
+				require.Nil(t, err)
+				assert.Equalf(t, http.StatusOK, rec.Code, "Expected status code to be %d, but was %d", http.StatusOK, rec.Code)
+
+				var body models.User
+				err := json.Unmarshal(rec.Body.Bytes(), &body)
+				require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
+
+				testutils.AssertUserBody(t, *tc.mockedUser, body, testutils.AssertUserConfig{
+					CreatedAt: &testutils.DateCheck{
+						Option: testutils.DateCheckOptionEquals,
+						Value:  tc.mockedUser.CreatedAt,
+					},
+					UpdatedAt: &testutils.DateCheck{
+						Option: testutils.DateCheckOptionEquals,
+						Value:  tc.mockedUser.UpdatedAt,
+					},
+					EmptyPassword: true,
+				})
 			}
 		})
 	}
