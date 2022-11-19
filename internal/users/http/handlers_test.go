@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	httpErrors "user-microservice/internal/errors/http"
 	"user-microservice/internal/models"
 	"user-microservice/internal/testutils"
 	userHttp "user-microservice/internal/users/http"
@@ -34,7 +35,14 @@ func TestCreateUser(t *testing.T) {
 	}{
 		{
 			"Create user successfully",
-			`{"firstName": "Create user FirstName"}`,
+			`{
+				"firstName": "CreateUser FirstName",
+				"lastName": "CreateUser LastName",
+				"nickname": "CreateUser Nickname",
+				"password": "CreateUser Password",
+				"email": "CreateUser Email",
+				"country": "CreateUser Country"
+			}`,
 			&models.User{
 				ID:        uuid.New(),
 				FirstName: "CreateUser FirstName",
@@ -55,8 +63,8 @@ func TestCreateUser(t *testing.T) {
 			`{}`,
 			nil,
 			http.StatusBadRequest,
-			echo.NewHTTPError(http.StatusBadRequest, nil),
-			true, //TODO: Change to false once it's validated
+			echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody),
+			false,
 		},
 		{
 			"Create user with invalid body",
@@ -66,7 +74,21 @@ func TestCreateUser(t *testing.T) {
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
 		},
-		//TODO: Add more test cases
+		{
+			"Create user with invalid fields",
+			`{
+				"firstName": true,
+				"lastName": 124.78,
+				"nickname": -87,
+				"password": false,
+				"email": "Updated Email",	
+				"country": {}
+			}`,
+			nil,
+			http.StatusBadRequest,
+			echo.NewHTTPError(http.StatusBadRequest),
+			false,
+		},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -109,7 +131,7 @@ func TestCreateUser(t *testing.T) {
 				assert.Equalf(t, http.StatusCreated, rec.Code, "Expected status code to be %d, but was %d", http.StatusCreated, rec.Code)
 				var body models.User
 				err := json.Unmarshal(rec.Body.Bytes(), &body)
-				require.NoError(t, err, "Expected no error when unmarshaling body")
+				require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
 
 				testutils.AssertUserBody(t, *tc.mockedUser, body, testutils.AssertUserConfig{})
 				//TODO: Assert password here
@@ -332,7 +354,161 @@ func TestGetUserByID(t *testing.T) {
 						Option: testutils.DateCheckOptionEquals,
 						Value:  tc.mockedUser.UpdatedAt,
 					},
-					EmptyPassword: true,
+					EqualPasswords: true,
+				})
+			}
+		})
+	}
+}
+
+func TestUpdateUserByID(t *testing.T) {
+	userID := uuid.New()
+	for _, tc := range []struct {
+		name             string
+		id               string
+		mockedID         uuid.UUID
+		body             string
+		mockedUser       models.User
+		expectedCode     int
+		mockedError      error
+		expectedError    error
+		shouldCallCreate bool
+		shouldCallGet    bool
+	}{
+		{
+			"Update user by ID successfully",
+			userID.String(),
+			userID,
+			`{
+				"firstName": "Update user FirstName",
+				"lastName": "Update user LastName",
+				"nickname": "Update user Nickname",
+				"password": "Updated Password",
+				"email": "Updated Email",	
+				"country": "Updated Country"
+			}`,
+			models.User{
+				ID:        userID,
+				FirstName: "Update user FirstName",
+				LastName:  "Update user LastName",
+				Nickname:  "Update user Nickname",
+				Password:  "Updated Password",
+				Email:     "Updated Email",
+				Country:   "Updated Country",
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
+			},
+			http.StatusOK,
+			nil,
+			nil,
+			true,
+			true,
+		},
+		{
+			"Update user with wrong id",
+			"wrong-id",
+			userID,
+			"{}",
+			models.User{},
+			http.StatusBadRequest,
+			nil,
+			echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID wrong-id"),
+			false,
+			false,
+		},
+		{
+			"Update user with empty body",
+			userID.String(),
+			userID,
+			`{}`,
+			models.User{},
+			http.StatusBadRequest,
+			nil,
+			echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody),
+			false,
+			false,
+		},
+		{
+			"Update user with invalid body",
+			userID.String(),
+			userID,
+			"invalid-body",
+			models.User{},
+			http.StatusBadRequest,
+			nil,
+			echo.NewHTTPError(http.StatusBadRequest, nil),
+			false,
+			false,
+		},
+		{
+			"Update user with invalid fields",
+			userID.String(),
+			userID,
+			`{
+				"firstName": true,
+				"lastName": 124.78,
+				"nickname": -87,
+				"password": false,
+				"email": "Updated Email",	
+				"country": {}
+			}`,
+			models.User{},
+			http.StatusBadRequest,
+			nil,
+			echo.NewHTTPError(http.StatusBadRequest, nil),
+			false,
+			false,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			//Given
+			ctrl := gomock.NewController(t)
+			userRepo := mock.NewMockRepository(ctrl)
+			userHandler := userHttp.NewHttpHandler(userRepo)
+
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.body))
+			req.Header.Set(echo.HeaderContentType, "application/json")
+			rec := httptest.NewRecorder()
+			e := echo.New()
+			c := e.NewContext(req, rec)
+			c.SetPath("/api/v1/users/:userId")
+			c.SetParamNames("userId")
+			c.SetParamValues(tc.id)
+
+			callTimes := 0
+			if tc.shouldCallCreate {
+				callTimes = 1
+			}
+			userRepo.EXPECT().Update(context.TODO(), gomock.Any()).Return(&tc.mockedUser, tc.mockedError).Times(callTimes)
+			userRepo.EXPECT().GetById(context.TODO(), tc.mockedID).Return(&tc.mockedUser, tc.mockedError).AnyTimes()
+
+			//when
+			err := userHandler.UpdateUserByID(c)
+
+			//Then
+			if tc.expectedError != nil {
+				testutils.AssertExpectedErrorsHttpReponse(t, tc.expectedCode, rec.Code, tc.expectedError, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equalf(t, http.StatusOK, rec.Code, "Expecred status code to be %d, but was %d", http.StatusOK, rec.Code)
+
+				var body models.User
+				err := json.Unmarshal(rec.Body.Bytes(), &body)
+				require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
+
+				testutils.AssertUserBody(t, tc.mockedUser, body, testutils.AssertUserConfig{
+					EqualPasswords: true,
+					UpdatedAt: &testutils.DateCheck{
+						Option: testutils.DateCheckOptionEquals,
+						Value:  tc.mockedUser.UpdatedAt,
+					},
+					CreatedAt: &testutils.DateCheck{
+						Option: testutils.DateCheckOptionEquals,
+						Value:  tc.mockedUser.CreatedAt,
+					},
 				})
 			}
 		})

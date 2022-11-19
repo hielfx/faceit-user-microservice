@@ -12,5 +12,5 @@ func AppendUsersRoutes(e *echo.Group, h users.Handler) {
 	e.POST("", h.CreateUser)
 	e.GET("/:userId", h.GetUserByID)
 	e.POST("/:userId", h.UpdateUserByID)
-	e.DELETE("/userId", h.DeleteUserByID)
+	e.DELETE("/:userId", h.DeleteUserByID)
 }
