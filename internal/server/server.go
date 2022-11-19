@@ -3,11 +3,14 @@ package server
 import (
 	"context"
 	"net/http"
+	_ "user-microservice/docs"
 	usersHttp "user-microservice/internal/users/http"
 	usersRepo "user-microservice/internal/users/repository/mongodb"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -36,11 +39,25 @@ func NewWithEcho(db *mongo.Database, e *echo.Echo) *Server {
 func (s *Server) Run() error {
 	router := s.echo.Group(CurrentApiVersion)
 
+	//middlewares
+	router.Use(middleware.RemoveTrailingSlash())
+	router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		// AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+		AllowHeaders: []string{echo.HeaderContentType},
+	}))
+	router.Use(middleware.Recover())
+	router.Use(middleware.Secure())
+
+	//Health check route
 	router.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"status": "It's alive!",
 		})
 	})
+
+	// Swagger route
+	router.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Initialize repositories
 	usersR := usersRepo.NewMongoDBRepository(s.db)

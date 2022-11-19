@@ -25,24 +25,26 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
+	validBody := `{
+		"firstName": "CreateUser FirstName",
+		"lastName": "CreateUser LastName",
+		"nickname": "CreateUser Nickname",
+		"password": "CreateUser Password",
+		"email": "CreateUser Email",
+		"country": "CreateUser Country"
+	}`
 	for _, tc := range []struct {
 		name           string
 		body           string
 		mockedUser     *models.User
 		expectedCode   int
+		mockedError    error
 		expectedError  error
 		shouldExecCall bool
 	}{
 		{
 			"Create user successfully",
-			`{
-				"firstName": "CreateUser FirstName",
-				"lastName": "CreateUser LastName",
-				"nickname": "CreateUser Nickname",
-				"password": "CreateUser Password",
-				"email": "CreateUser Email",
-				"country": "CreateUser Country"
-			}`,
+			validBody,
 			&models.User{
 				ID:        uuid.New(),
 				FirstName: "CreateUser FirstName",
@@ -54,7 +56,8 @@ func TestCreateUser(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 				UpdatedAt: time.Now().UTC(),
 			},
-			0,
+			http.StatusOK,
+			nil,
 			nil,
 			true,
 		},
@@ -63,6 +66,7 @@ func TestCreateUser(t *testing.T) {
 			`{}`,
 			nil,
 			http.StatusBadRequest,
+			nil,
 			echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody),
 			false,
 		},
@@ -71,6 +75,7 @@ func TestCreateUser(t *testing.T) {
 			`invalid body`,
 			nil,
 			http.StatusBadRequest,
+			nil,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
 		},
@@ -86,8 +91,18 @@ func TestCreateUser(t *testing.T) {
 			}`,
 			nil,
 			http.StatusBadRequest,
-			echo.NewHTTPError(http.StatusBadRequest),
+			nil,
+			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
+		},
+		{
+			"Create user with internal server error",
+			validBody,
+			nil,
+			http.StatusInternalServerError,
+			errors.New("homemade error"),
+			errors.New("homemade error"),
+			true,
 		},
 	} {
 		tc := tc
@@ -115,18 +130,14 @@ func TestCreateUser(t *testing.T) {
 			mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(tc.mockedUser, tc.expectedError).Times(callTimes)
 
 			// When
+			if tc.name == "Create user with internal server error" {
+				fmt.Println("this")
+			}
 			err := userHandler.CreateUser(echoCtx)
 
 			// Then
 			if tc.expectedError != nil {
-				echoError, isOK := err.(*echo.HTTPError)
-				if assert.True(t, isOK) {
-					assert.Equal(t, tc.expectedCode, echoError.Code)
-				} else {
-					assert.Equalf(t, tc.expectedCode, rec.Code, "Expected error code to be %d, but was %d", tc.expectedCode, rec.Code)
-					require.Error(t, err)
-					assert.Equal(t, tc.expectedError, err)
-				}
+				testutils.AssertExpectedErrorsHttpReponse(t, tc.expectedCode, rec.Code, tc.expectedError, err)
 			} else {
 				assert.Equalf(t, http.StatusCreated, rec.Code, "Expected status code to be %d, but was %d", http.StatusCreated, rec.Code)
 				var body models.User
@@ -363,6 +374,25 @@ func TestGetUserByID(t *testing.T) {
 
 func TestUpdateUserByID(t *testing.T) {
 	userID := uuid.New()
+	validBody := `{
+		"firstName": "Update user FirstName",
+		"lastName": "Update user LastName",
+		"nickname": "Update user Nickname",
+		"password": "Updated Password",
+		"email": "Updated Email",	
+		"country": "Updated Country"
+	}`
+	validUser := models.User{
+		ID:        userID,
+		FirstName: "Update user FirstName",
+		LastName:  "Update user LastName",
+		Nickname:  "Update user Nickname",
+		Password:  "Updated Password",
+		Email:     "Updated Email",
+		Country:   "Updated Country",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
 	for _, tc := range []struct {
 		name             string
 		id               string
@@ -371,6 +401,7 @@ func TestUpdateUserByID(t *testing.T) {
 		mockedUser       models.User
 		expectedCode     int
 		mockedError      error
+		mockedGetError   error
 		expectedError    error
 		shouldCallCreate bool
 		shouldCallGet    bool
@@ -379,26 +410,10 @@ func TestUpdateUserByID(t *testing.T) {
 			"Update user by ID successfully",
 			userID.String(),
 			userID,
-			`{
-				"firstName": "Update user FirstName",
-				"lastName": "Update user LastName",
-				"nickname": "Update user Nickname",
-				"password": "Updated Password",
-				"email": "Updated Email",	
-				"country": "Updated Country"
-			}`,
-			models.User{
-				ID:        userID,
-				FirstName: "Update user FirstName",
-				LastName:  "Update user LastName",
-				Nickname:  "Update user Nickname",
-				Password:  "Updated Password",
-				Email:     "Updated Email",
-				Country:   "Updated Country",
-				CreatedAt: time.Now().UTC(),
-				UpdatedAt: time.Now().UTC(),
-			},
+			validBody,
+			validUser,
 			http.StatusOK,
+			nil,
 			nil,
 			nil,
 			true,
@@ -412,6 +427,7 @@ func TestUpdateUserByID(t *testing.T) {
 			models.User{},
 			http.StatusBadRequest,
 			nil,
+			nil,
 			echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID wrong-id"),
 			false,
 			false,
@@ -424,6 +440,7 @@ func TestUpdateUserByID(t *testing.T) {
 			models.User{},
 			http.StatusBadRequest,
 			nil,
+			nil,
 			echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody),
 			false,
 			false,
@@ -435,6 +452,7 @@ func TestUpdateUserByID(t *testing.T) {
 			"invalid-body",
 			models.User{},
 			http.StatusBadRequest,
+			nil,
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
@@ -455,8 +473,48 @@ func TestUpdateUserByID(t *testing.T) {
 			models.User{},
 			http.StatusBadRequest,
 			nil,
+			nil,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
+			false,
+		},
+		{
+			"Update user with not found error",
+			userID.String(),
+			userID,
+			`{}`,
+			models.User{},
+			http.StatusNotFound,
+			nil,
+			mongo.ErrNilDocument,
+			echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User not found for ID %s", userID.String())),
+			false,
+			false,
+		},
+		{
+			"Update user with internal server error by get",
+			userID.String(),
+			userID,
+			`{}`,
+			models.User{},
+			http.StatusInternalServerError,
+			nil,
+			errors.New("homemade error"),
+			errors.New("homemade error"),
+			false,
+			true,
+		},
+		{
+			"Update user with internal server error by update",
+			userID.String(),
+			userID,
+			validBody,
+			validUser,
+			http.StatusInternalServerError,
+			errors.New("homemade error"),
+			nil,
+			errors.New("homemade error"),
+			true,
 			false,
 		},
 	} {
@@ -483,7 +541,7 @@ func TestUpdateUserByID(t *testing.T) {
 				callTimes = 1
 			}
 			userRepo.EXPECT().Update(context.TODO(), gomock.Any()).Return(&tc.mockedUser, tc.mockedError).Times(callTimes)
-			userRepo.EXPECT().GetById(context.TODO(), tc.mockedID).Return(&tc.mockedUser, tc.mockedError).AnyTimes()
+			userRepo.EXPECT().GetById(context.TODO(), tc.mockedID).Return(&tc.mockedUser, tc.mockedGetError).AnyTimes()
 
 			//when
 			err := userHandler.UpdateUserByID(c)

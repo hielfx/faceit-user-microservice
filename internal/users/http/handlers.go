@@ -34,7 +34,7 @@ func (h httpHandler) CreateUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if !body.Valid() || body.Password == "" {
+	if !body.Valid() {
 		return echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody)
 	}
 	// pwd, err := sec.HashPassword(body.Password)
