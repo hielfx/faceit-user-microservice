@@ -22,4 +22,4 @@
 - There should be a "use case" layer, in which we test and execute the business logic for each use case. In this project this layer does not exists, all the logic has been done in the handlers layer. This has some side effects, such as:
   - We cannot correctly test the handler logic and the use case logic without changing the same test
   - We cannot reuse the logic in other parts of the application if needed.
-  - If the use case layer has a new dependency, we have to modify the handlers instead.
+  - If the use case layer has a new dependency, we have to modify the handlers instead (for example, the redis dependency; this dependency forced us to include it in the handlers instead on its corresponding layer)

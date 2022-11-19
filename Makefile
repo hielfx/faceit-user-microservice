@@ -45,6 +45,14 @@ $(MOCKGEN):
 generate: $(MOCKGEN)
 	$(GOBIN) generate ./...
 
+.PHONY: compose-up-dev
+compose-up-dev:
+	docker compose -f docker-compose.dev.yaml up --remove-orphans -d
 .PHONY: compose-dev
-compose-dev:
-	docker compose -f docker-compose.dev.yaml up -d
+compose-dev: compose-up-dev
+.PHONY: compose-down-dev
+compose-down-dev:
+	docker compose -f docker-compose.dev.yaml down
+.PHONY: compose-ps-dev
+compose-ps-dev:
+	docker compose -f docker-compose.dev.yaml ps

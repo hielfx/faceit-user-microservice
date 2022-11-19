@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// NewMongoDatabase creates a new mongodb connection and returns the database
+// NewMongoDatabase - creates a new mongodb connection and returns the database
 func NewMongoDatabase() (*mongo.Database, error) {
 	mongoOptions := options.Client().ApplyURI("mongodb://localhost:27017").SetRegistry(mongoRegistry)
 	client, err := mongo.Connect(context.TODO(), mongoOptions)

@@ -7,5 +7,13 @@ services:
       MONGO_INITDB_DATABASE: users-microservice
     ports:
       - 27017:27017
-    # volumes:
+    volumes:
+      - ./docker/volumes/mongo:/data/db
     #   - ./init-db.js:/docker-entrypoint-initdb.d/init.js
+
+  pubsub:
+    image: redis:6
+    ports:
+      - 6379:6379
+    volumes:
+      - ./docker/volumes/redis:/data
