@@ -11,7 +11,7 @@ import (
 
 // NewMongoDatabase creates a new mongodb connection and returns the database
 func NewMongoDatabase() (*mongo.Database, error) {
-	mongoOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	mongoOptions := options.Client().ApplyURI("mongodb://localhost:27017").SetRegistry(mongoRegistry)
 	client, err := mongo.Connect(context.TODO(), mongoOptions)
 	if err != nil {
 		logrus.Errorf("Error in db/mongodb.NewMongoDatabase -> error connecting to db: %s", err)

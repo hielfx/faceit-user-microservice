@@ -1,6 +1,7 @@
 version: "3.7"
 services:
-  dev_db:
+
+  db:
     image: mongo:6
     environment:
       MONGO_INITDB_DATABASE: users-microservice

@@ -17,11 +17,11 @@ all: build
 build: $(BINDIR)/$(BINNAME)
 
 $(BINDIR)/$(BINNAME):
-	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) $(GOBIN) build -trimpath -ldflags '$(LDFLAGS)' -o '$(BINDIR)'/$(BINNAME) $(MAINPATH)
+	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) $(GOBIN) build -trimpath -ldflags '$(LDFLAGS)' -o $(BINDIR)/$(BINNAME) $(MAINPATH)
 
 .PHONY: run
 run:
-	$(GOBIN) run $(MAIN_PATH)
+	$(GOBIN) run $(MAINPATH)
 
 .PHONY: tidy
 tidy:
@@ -44,3 +44,7 @@ $(MOCKGEN):
 .PHONY: generate
 generate: $(MOCKGEN)
 	$(GOBIN) generate ./...
+
+.PHONY: compose-dev
+compose-dev:
+	docker compose -f docker-compose.dev.yaml up -d

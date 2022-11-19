@@ -157,16 +157,16 @@ func TestDeleteUser(t *testing.T) {
 			userUUID,
 			nil,
 			nil,
-			http.StatusOK,
+			http.StatusNoContent,
 			true,
 		},
 		{
-			"Delete non existing user with error",
+			"Delete user with error",
 			userUUID.String(),
 			userUUID,
-			mongo.ErrNoDocuments,
-			nil,
-			http.StatusOK,
+			errors.New("homemade error"),
+			errors.New("homemade error"),
+			http.StatusInternalServerError,
 			true,
 		},
 		{
@@ -212,20 +212,20 @@ func TestDeleteUser(t *testing.T) {
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				echoError, isOK := err.(*echo.HTTPError)
-				if assert.True(t, isOK) {
+				if isOK {
 					require.NotNil(t, echoError, "Expected echoError not to be nil")
 					assert.Equalf(t, tc.expectedCode, echoError.Code, "Expected error code to be %d, but was %d", tc.expectedCode, echoError.Code)
 					expectedEchoError, isOK := tc.expectedError.(*echo.HTTPError)
-					if assert.True(t, isOK) {
+					if isOK {
 						require.NotNil(t, expectedEchoError, "Expected expectedEchoError not to be nil")
 						assert.Equal(t, echoError, expectedEchoError, "Expected expectedEchoError to be equal to %s, but was %s", expectedEchoError, echoError)
 					}
 				} else {
-					assert.Equalf(t, tc.expectedCode, rec.Code, "Expected error code to be %d, but was %d", tc.expectedCode, rec.Code)
+					// assert.Equalf(t, tc.expectedCode, rec.Code, "Expected error code to be %d, but was %d", tc.expectedCode, rec.Code)
 					assert.Equal(t, tc.expectedError, err)
 				}
 			} else {
-				assert.Equalf(t, http.StatusOK, tc.expectedCode, "Expected status code to be %d, but was %d", http.StatusOK, tc.expectedCode)
+				assert.Equalf(t, http.StatusNoContent, rec.Code, "Expected status code to be %d, but was %d", http.StatusNoContent, rec.Code)
 				body := rec.Body.String()
 				assert.Emptyf(t, body, "Expected body to be empty, but was %s", body)
 			}
