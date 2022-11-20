@@ -8,6 +8,7 @@ import (
 	"user-microservice/internal/models"
 	"user-microservice/internal/pagination"
 	"user-microservice/internal/users"
+	userPS "user-microservice/internal/users/pubsub"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -18,15 +19,16 @@ import (
 var _ = echo.HTTPError{}
 
 type httpHandler struct {
-	repository users.Repository
+	repository       users.Repository
+	pubsubRepository userPS.PubSub
 }
 
 var _ users.Handler = httpHandler{}
 var _ users.Handler = (*httpHandler)(nil)
 
 // NewHttpHandler - returns a new user http handler initialized with the repository
-func NewHttpHandler(usersRepository users.Repository) users.Handler {
-	return &httpHandler{usersRepository}
+func NewHttpHandler(usersRepository users.Repository, pubsubRepository userPS.PubSub) users.Handler {
+	return &httpHandler{usersRepository, pubsubRepository}
 }
 
 // CreateUser godoc
@@ -64,6 +66,13 @@ func (h httpHandler) CreateUser(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Notify user creation
+	go func() {
+		if err := h.pubsubRepository.NotifyUserCreation(ctx, *res); err != nil {
+			logrus.Errorf("Error in users/http.CreateUser -> could not notify user creation: %s", err)
+		}
+	}()
 
 	return c.JSON(http.StatusCreated, res)
 }
@@ -157,7 +166,8 @@ func (h httpHandler) UpdateUserByID(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	userToModify, err := h.repository.GetById(context.TODO(), userID.String())
+	ctx := context.TODO()
+	userToModify, err := h.repository.GetById(ctx, userID.String())
 	if err != nil {
 		if err == mongo.ErrNilDocument {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User not found for ID %s", userID))
@@ -170,10 +180,17 @@ func (h httpHandler) UpdateUserByID(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody)
 	}
 
-	res, err := h.repository.Update(context.TODO(), *userToModify)
+	res, err := h.repository.Update(ctx, *userToModify)
 	if err != nil {
 		return err
 	}
+
+	// Notify user update
+	go func() {
+		if err := h.pubsubRepository.NotifyUserUpdate(ctx, *res); err != nil {
+			logrus.Errorf("Error in users/http.UpdateUserByID -> could not notify user update -> %s", err)
+		}
+	}()
 
 	return c.JSON(http.StatusOK, res)
 }
@@ -187,7 +204,7 @@ func (h httpHandler) UpdateUserByID(c echo.Context) error {
 // @Success     204
 // @Failure     400 {object} echo.HTTPError
 // @Failure     500 {object} echo.HTTPError
-// @Router      /users/{userId} [post]
+// @Router      /users/{userId} [delete]
 func (h httpHandler) DeleteUserByID(c echo.Context) error {
 	idStr := c.Param("userId")
 	userID, err := uuid.Parse(idStr)
@@ -195,9 +212,17 @@ func (h httpHandler) DeleteUserByID(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid ID %s", idStr))
 	}
 
-	if err := h.repository.DeleteById(context.TODO(), userID.String()); err != nil {
+	ctx := context.TODO()
+	if err := h.repository.DeleteById(ctx, userID.String()); err != nil {
 		return err
 	}
+
+	// Notify user deletion
+	go func() {
+		if err := h.pubsubRepository.NotifyUserDeletion(ctx, userID.String()); err != nil {
+			logrus.Errorf("Error in users/http.DeleteUserByID -> could not notify user deletion: %s", err)
+		}
+	}()
 
 	return c.NoContent(http.StatusNoContent)
 }

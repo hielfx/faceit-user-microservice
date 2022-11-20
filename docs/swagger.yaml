@@ -111,6 +111,28 @@ paths:
             $ref: '#/definitions/echo.HTTPError'
       summary: Create a user
   /users/{userId}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a user by its id from the DB
+      parameters:
+      - description: User id
+        in: path
+        name: userId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Deletes a user
     get:
       description: Gets a user by its id from the DB and returns it
       parameters:
@@ -142,23 +164,37 @@ paths:
     post:
       consumes:
       - application/json
-      description: Deletes a user by its id from the DB
+      description: Gets a user by its id from the DB and returns it
       parameters:
       - description: User id
         in: path
         name: userId
         required: true
         type: integer
+      - description: Request body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/echo.HTTPError'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/echo.HTTPError'
-      summary: Deletes a user
+      summary: Gets a user
 swagger: "2.0"

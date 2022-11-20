@@ -4,6 +4,7 @@ import (
 	"context"
 	"user-microservice/internal/server"
 	"user-microservice/pkg/db/mongodb"
+	redisdb "user-microservice/pkg/db/redis"
 )
 
 // @title       Faceit Users Microservices
@@ -22,7 +23,14 @@ func main() {
 		}
 	}()
 
-	s := server.New(db)
+	redisDB := redisdb.MewRedisDatabase()
+	defer func() {
+		if err := redisDB.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	s := server.New(db, redisDB)
 	defer func() {
 		if err := s.Cleanup(); err != nil {
 			panic(err)

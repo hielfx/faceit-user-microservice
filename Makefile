@@ -76,3 +76,7 @@ swag: $(SWAGGOSWAG) vendor
 	@echo "Running swaggo-swag"
 	swag init --parseDependency --parseVendor --parseInternal  -g **/**/*.go --exclude ./vendor
 	swag fmt
+
+.PHONY: subscriber
+subscriber:
+	$(GOBIN) run ./cmd/subscriber

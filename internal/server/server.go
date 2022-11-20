@@ -6,8 +6,10 @@ import (
 	"user-microservice/docs"
 	_ "user-microservice/docs"
 	usersHttp "user-microservice/internal/users/http"
+	usersPS "user-microservice/internal/users/pubsub"
 	usersRepo "user-microservice/internal/users/repository/mongodb"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
@@ -22,18 +24,19 @@ const (
 
 // Server - server main struct
 type Server struct {
-	db   *mongo.Database
-	echo *echo.Echo
+	db      *mongo.Database
+	echo    *echo.Echo
+	redisDB *redis.Client
 }
 
 // New - returns a newly initialized server
-func New(db *mongo.Database) *Server {
-	return NewWithEcho(db, echo.New())
+func New(db *mongo.Database, redisDB *redis.Client) *Server {
+	return NewWithEcho(db, echo.New(), redisDB)
 }
 
 // NewWithEcho - same as New but with a given echo.Echo
-func NewWithEcho(db *mongo.Database, e *echo.Echo) *Server {
-	return &Server{db, e}
+func NewWithEcho(db *mongo.Database, e *echo.Echo, redisDB *redis.Client) *Server {
+	return &Server{db, e, redisDB}
 }
 
 // Run - Executes the server and starts it
@@ -59,13 +62,15 @@ func (s *Server) Run() error {
 
 	// Swagger route
 	docs.SwaggerInfo.BasePath = CurrentApiVersion
+	docs.SwaggerInfo.Title = "Users microservice API"
 	router.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Initialize repositories
 	usersR := usersRepo.NewMongoDBRepository(s.db)
+	usersPubSub := usersPS.NewPubSub(s.redisDB)
 
 	//Initialize http handlers
-	usersHandler := usersHttp.NewHttpHandler(usersR)
+	usersHandler := usersHttp.NewHttpHandler(usersR, usersPubSub)
 
 	// Append routes
 	usersHttp.AppendUsersRoutes(router.Group(UsersPath), usersHandler)

@@ -18,7 +18,9 @@ import (
 	"user-microservice/internal/testutils"
 	userHttp "user-microservice/internal/users/http"
 	"user-microservice/internal/users/mock"
+	usersPubSub "user-microservice/internal/users/pubsub"
 
+	"github.com/go-redis/redismock/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -37,13 +39,14 @@ func TestCreateUser(t *testing.T) {
 		"country": "CreateUser Country"
 	}`
 	for _, tc := range []struct {
-		name           string
-		body           string
-		mockedUser     *models.User
-		expectedCode   int
-		mockedError    error
-		expectedError  error
-		shouldExecCall bool
+		name              string
+		body              string
+		mockedUser        *models.User
+		expectedCode      int
+		mockedError       error
+		expectedError     error
+		shouldExecCall    bool
+		shouldExecPublish bool
 	}{
 		{
 			"Create user successfully",
@@ -63,6 +66,7 @@ func TestCreateUser(t *testing.T) {
 			nil,
 			nil,
 			true,
+			true,
 		},
 		{
 			"Create user with empty body",
@@ -72,6 +76,7 @@ func TestCreateUser(t *testing.T) {
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody),
 			false,
+			false,
 		},
 		{
 			"Create user with invalid body",
@@ -80,6 +85,7 @@ func TestCreateUser(t *testing.T) {
 			http.StatusBadRequest,
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
+			false,
 			false,
 		},
 		{
@@ -97,6 +103,7 @@ func TestCreateUser(t *testing.T) {
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
+			false,
 		},
 		{
 			"Create user with internal server error",
@@ -106,6 +113,7 @@ func TestCreateUser(t *testing.T) {
 			errors.New("homemade error"),
 			errors.New("homemade error"),
 			true,
+			false,
 		},
 	} {
 		tc := tc
@@ -116,8 +124,10 @@ func TestCreateUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
+			redisDB, redisMock := redismock.NewClientMock()
 			mockUserRepo := mock.NewMockRepository(ctrl)
-			userHandler := userHttp.NewHttpHandler(mockUserRepo)
+			pubsubRepo := usersPubSub.NewPubSub(redisDB)
+			userHandler := userHttp.NewHttpHandler(mockUserRepo, pubsubRepo)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/users", strings.NewReader(tc.body))
 			req.Header.Set(echo.HeaderContentType, "application/json")
@@ -131,6 +141,9 @@ func TestCreateUser(t *testing.T) {
 				callTimes = 1
 			}
 			mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(tc.mockedUser, tc.expectedError).Times(callTimes)
+			if tc.shouldExecPublish {
+				redisMock.ExpectPublish(usersPubSub.TopicUserCreation, *tc.mockedUser)
+			}
 
 			// When
 			err := userHandler.CreateUser(echoCtx)
@@ -145,6 +158,13 @@ func TestCreateUser(t *testing.T) {
 				require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
 
 				testutils.AssertUserBody(t, *tc.mockedUser, body, testutils.AssertUserConfig{})
+
+				if tc.shouldExecPublish {
+					//Wait 3 secods for goroutine to finish
+					<-time.Tick(3 * time.Second)
+					redisError := redisMock.ExpectationsWereMet()
+					require.NoErrorf(t, redisError, "Expected redisError not to be, but was %s", redisError)
+				}
 			}
 		})
 	}
@@ -153,13 +173,14 @@ func TestCreateUser(t *testing.T) {
 func TestDeleteUser(t *testing.T) {
 	userUUID := uuid.New()
 	for _, tc := range []struct {
-		name           string
-		id             string
-		mockedId       string
-		mockedError    error
-		expectedError  error
-		expectedCode   int
-		shouldCallRepo bool
+		name              string
+		id                string
+		mockedId          string
+		mockedError       error
+		expectedError     error
+		expectedCode      int
+		shouldCallRepo    bool
+		shouldExecPublish bool
 	}{
 		{
 			"Delete user successfully",
@@ -168,6 +189,7 @@ func TestDeleteUser(t *testing.T) {
 			nil,
 			nil,
 			http.StatusNoContent,
+			true,
 			true,
 		},
 		{
@@ -178,6 +200,7 @@ func TestDeleteUser(t *testing.T) {
 			errors.New("homemade error"),
 			http.StatusInternalServerError,
 			true,
+			false,
 		},
 		{
 			"Delete user with wrong id",
@@ -186,6 +209,7 @@ func TestDeleteUser(t *testing.T) {
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, "Invalid ID invalid-user-id"),
 			http.StatusBadRequest,
+			false,
 			false,
 		},
 	} {
@@ -197,8 +221,10 @@ func TestDeleteUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
+			redisDB, redisMock := redismock.NewClientMock()
+			pubsubRepo := usersPubSub.NewPubSub(redisDB)
 			mockUserRepo := mock.NewMockRepository(ctrl)
-			userHandler := userHttp.NewHttpHandler(mockUserRepo)
+			userHandler := userHttp.NewHttpHandler(mockUserRepo, pubsubRepo)
 
 			req := httptest.NewRequest(http.MethodDelete, "/", nil)
 			req.Header.Set(echo.HeaderContentType, "application/json")
@@ -214,6 +240,9 @@ func TestDeleteUser(t *testing.T) {
 				callTimes = 1
 			}
 			mockUserRepo.EXPECT().DeleteById(ctx, tc.mockedId).Return(tc.mockedError).Times(callTimes)
+			if tc.shouldExecPublish {
+				redisMock.ExpectPublish(usersPubSub.TopicUserDeletion, tc.mockedId)
+			}
 
 			//When
 			err := userHandler.DeleteUserByID(c)
@@ -238,6 +267,13 @@ func TestDeleteUser(t *testing.T) {
 				assert.Equalf(t, http.StatusNoContent, rec.Code, "Expected status code to be %d, but was %d", http.StatusNoContent, rec.Code)
 				body := rec.Body.String()
 				assert.Emptyf(t, body, "Expected body to be empty, but was %s", body)
+
+				if tc.shouldExecPublish {
+					// wait 3 seconds for goroutine to complete
+					<-time.Tick(3 * time.Second)
+					redisError := redisMock.ExpectationsWereMet()
+					require.NoErrorf(t, redisError, "Expected redisError not to be, but was %s", redisError)
+				}
 			}
 		})
 	}
@@ -314,7 +350,9 @@ func TestGetUserByID(t *testing.T) {
 			//Given
 			ctrl := gomock.NewController(t)
 			userRepo := mock.NewMockRepository(ctrl)
-			userHandler := userHttp.NewHttpHandler(userRepo)
+			redisDB, _ := redismock.NewClientMock()
+			pubsubRepo := usersPubSub.NewPubSub(redisDB)
+			userHandler := userHttp.NewHttpHandler(userRepo, pubsubRepo)
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
@@ -393,17 +431,18 @@ func TestUpdateUserByID(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	for _, tc := range []struct {
-		name             string
-		id               string
-		mockedID         string
-		body             string
-		mockedUser       models.User
-		expectedCode     int
-		mockedError      error
-		mockedGetError   error
-		expectedError    error
-		shouldCallCreate bool
-		shouldCallGet    bool
+		name              string
+		id                string
+		mockedID          string
+		body              string
+		mockedUser        models.User
+		expectedCode      int
+		mockedError       error
+		mockedGetError    error
+		expectedError     error
+		shouldCallCreate  bool
+		shouldCallGet     bool
+		shouldExecPublish bool
 	}{
 		{
 			"Update user by ID successfully",
@@ -415,6 +454,7 @@ func TestUpdateUserByID(t *testing.T) {
 			nil,
 			nil,
 			nil,
+			true,
 			true,
 			true,
 		},
@@ -430,6 +470,7 @@ func TestUpdateUserByID(t *testing.T) {
 			echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID wrong-id"),
 			false,
 			false,
+			false,
 		},
 		{
 			"Update user with empty body",
@@ -443,6 +484,7 @@ func TestUpdateUserByID(t *testing.T) {
 			echo.NewHTTPError(http.StatusBadRequest, httpErrors.ErrInvalidBody),
 			false,
 			false,
+			false,
 		},
 		{
 			"Update user with invalid body",
@@ -454,6 +496,7 @@ func TestUpdateUserByID(t *testing.T) {
 			nil,
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, nil),
+			false,
 			false,
 			false,
 		},
@@ -476,6 +519,7 @@ func TestUpdateUserByID(t *testing.T) {
 			echo.NewHTTPError(http.StatusBadRequest, nil),
 			false,
 			false,
+			false,
 		},
 		{
 			"Update user with not found error",
@@ -487,6 +531,7 @@ func TestUpdateUserByID(t *testing.T) {
 			nil,
 			mongo.ErrNilDocument,
 			echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User not found for ID %s", userID.String())),
+			false,
 			false,
 			false,
 		},
@@ -502,6 +547,7 @@ func TestUpdateUserByID(t *testing.T) {
 			errors.New("homemade error"),
 			false,
 			true,
+			false,
 		},
 		{
 			"Update user with internal server error by update",
@@ -515,6 +561,7 @@ func TestUpdateUserByID(t *testing.T) {
 			errors.New("homemade error"),
 			true,
 			false,
+			false,
 		},
 	} {
 		tc := tc
@@ -524,7 +571,9 @@ func TestUpdateUserByID(t *testing.T) {
 			//Given
 			ctrl := gomock.NewController(t)
 			userRepo := mock.NewMockRepository(ctrl)
-			userHandler := userHttp.NewHttpHandler(userRepo)
+			redisDB, redisMock := redismock.NewClientMock()
+			pubsubRepo := usersPubSub.NewPubSub(redisDB)
+			userHandler := userHttp.NewHttpHandler(userRepo, pubsubRepo)
 
 			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.body))
 			req.Header.Set(echo.HeaderContentType, "application/json")
@@ -541,6 +590,9 @@ func TestUpdateUserByID(t *testing.T) {
 			}
 			userRepo.EXPECT().Update(context.TODO(), gomock.Any()).Return(&tc.mockedUser, tc.mockedError).Times(callTimes)
 			userRepo.EXPECT().GetById(context.TODO(), tc.mockedID).Return(&tc.mockedUser, tc.mockedGetError).AnyTimes()
+			if tc.shouldExecPublish {
+				redisMock.ExpectPublish(usersPubSub.TopicUserUpdate, tc.mockedUser)
+			}
 
 			//when
 			err := userHandler.UpdateUserByID(c)
@@ -567,6 +619,13 @@ func TestUpdateUserByID(t *testing.T) {
 						Value:  tc.mockedUser.CreatedAt,
 					},
 				})
+
+				if tc.shouldExecPublish {
+					//Wait 3 secods for goroutine to finish
+					<-time.Tick(3 * time.Second)
+					redisError := redisMock.ExpectationsWereMet()
+					require.NoErrorf(t, redisError, "Expected redisError not to be, but was %s", redisError)
+				}
 			}
 		})
 	}
@@ -680,7 +739,9 @@ func TestGetAllUsers(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			userRepo := mock.NewMockRepository(ctrl)
-			h := userHttp.NewHttpHandler(userRepo)
+			redisDB, _ := redismock.NewClientMock()
+			pubsubRepo := usersPubSub.NewPubSub(redisDB)
+			h := userHttp.NewHttpHandler(userRepo, pubsubRepo)
 
 			callTimes := 0
 			if tc.shouldCallRepo {
