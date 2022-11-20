@@ -156,14 +156,14 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Gets a user by its id from the DB and returns it",
+                "description": "Updates a user by its id with the given body data",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Gets a user",
+                "summary": "Updates a user",
                 "parameters": [
                     {
                         "type": "integer",
@@ -317,12 +317,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Faceit Users Microservices",
+	Description:      "Faceit Users Microservices",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

@@ -1,6 +1,31 @@
 version: "3.7"
 services:
 
+  server:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - 4040:4040
+    environment:
+      - CONFIG_FILE=/app/config/dev.yaml
+    volumes:
+      - ./config/dev.yaml:/app/config/dev.yaml
+    depends_on:
+      - db
+      - pubsub
+
+  subscriber:
+    build:
+      context: ./
+      dockerfile: ./docker/dev/Dockerfile.subscriber
+    depends_on:
+      - pubsub
+    environment:
+      - CONFIG_FILE=/app/config/dev.yaml
+    volumes:
+      - ./config/dev.yaml:/app/config/dev.yaml
+
   db:
     image: mongo:6
     environment:
@@ -9,11 +34,11 @@ services:
       - 27017:27017
     volumes:
       - ./docker/dev/init-db.js:/docker-entrypoint-initdb.d/init.js
-      - ./docker/volumes/mongo:/data/db
+      - ./docker/dev/volumes/mongo:/data/db
 
   pubsub:
     image: redis:6
     ports:
       - 6379:6379
     volumes:
-      - ./docker/volumes/redis:/data
+      - ./docker/dev/volumes/redis:/data

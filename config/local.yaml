@@ -1,0 +1,8 @@
+mongo:
+  uri: mongodb://localhost:27017
+  db: users-microservice
+
+redis:
+  addr: localhost:6379
+  password: 
+  db: 0

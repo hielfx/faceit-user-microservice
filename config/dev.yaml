@@ -1,0 +1,8 @@
+mongo:
+  uri: mongodb://db:27017
+  db: users-microservice
+
+redis:
+  addr: pubsub:6379
+  password: 
+  db: 0

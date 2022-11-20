@@ -11,7 +11,11 @@ TEST_FLAGS := -race -failfast -cover -coverprofile=./test/coverage/c.out
 EXTRA_TEST_FLAGS ?= -v
 
 DC_DEV_FILE ?= docker-compose.dev.yaml
+DC_LOCAL_FILE ?= docker-compose.local.yaml
 DC_ARGS ?= ""
+
+CONFIG_FILE_LOCAL := $(CURDIR)/config/local.yaml
+CONFIG_FILE_DEV := $(CURDIR)/config/dev.yaml
 
 .PHONY: all
 all: build
@@ -22,7 +26,11 @@ build:
 
 .PHONY: run
 run:
-	$(GOBIN) run $(MAINPATH)
+ifeq ($(CONFIG_FILE),)
+run: CONFIG_FILE=$(CONFIG_FILE_LOCAL)
+endif
+run:
+	CONFIG_FILE=$(CONFIG_FILE) $(GOBIN) run $(MAINPATH)
 
 .PHONY: tidy
 tidy:
@@ -67,6 +75,18 @@ dev-down:
 .PHONY: dev-exec
 dev-exec:
 	docker compose -f $(DC_DEV_FILE) $(DC_ARGS)
+	
+.PHONY: local-up
+local-up:
+	docker compose -f $(DC_LOCAL_FILE) up --remove-orphans --build -d
+
+.PHONY: local-down
+local-down:
+	docker compose -f $(DC_LOCAL_FILE) down --remove-orphans
+
+.PHONY: local-exec
+local-exec:
+	docker compose -f $(DC_LOCAL_FILE) $(DC_ARGS)
 
 $(SWAGGOSWAG):
 	(cd /; GO111MODULE=on $(GOBIN) install github.com/swaggo/swag/cmd/swag@latest)
@@ -78,5 +98,12 @@ swag: $(SWAGGOSWAG) vendor
 	swag fmt
 
 .PHONY: subscriber
+ifeq ($(CONFIG_FILE),)
+subscriber: CONFIG_FILE=$(CONFIG_FILE_LOCAL)
+endif
 subscriber:
-	$(GOBIN) run ./cmd/subscriber
+	CONFIG_FILE=$(CONFIG_FILE) $(GOBIN) run ./cmd/subscriber
+
+.PHONY: build-subscriber
+build-subscriber:
+	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) $(GOBIN) build -trimpath -ldflags '$(LDFLAGS)' -o $(BINDIR)/subscriber ./cmd/subscriber

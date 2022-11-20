@@ -1,10 +1,11 @@
-FROM go:1.19 AS BUILDER
+FROM golang:1.19 AS BUILDER
 
 WORKDIR /app
 
 COPY . .
 
-RUN go mod download && make
+RUN go mod download
+RUN make
 
 
 FROM alpine:3.15

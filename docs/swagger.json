@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Faceit Users Microservices",
+        "title": "Faceit Users Microservices",
+        "contact": {},
+        "version": "1.0"
     },
+    "basePath": "/api/v1",
     "paths": {
         "/users": {
             "get": {
@@ -144,14 +148,14 @@
                 }
             },
             "post": {
-                "description": "Gets a user by its id from the DB and returns it",
+                "description": "Updates a user by its id with the given body data",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Gets a user",
+                "summary": "Updates a user",
                 "parameters": [
                     {
                         "type": "integer",

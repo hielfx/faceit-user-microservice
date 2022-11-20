@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 	"user-microservice/internal/pagination"
 
@@ -18,21 +19,6 @@ type User struct {
 	Country   string    `json:"country" bson:"country"`
 	CreatedAt time.Time `json:"createdAt" bson:"created_at"`
 	UpdatedAt time.Time `json:"updatedAt" bson:"updated_at"`
-}
-
-// PaginatedUsers - users pagination data
-type PaginatedUsers struct {
-	pagination.Paginated
-	Users []User `json:"users"`
-}
-
-// UserFilters - used when filtering users
-type UserFilters struct {
-	FirstName string `query:"firstName" bson:"first_name,omitempty"`
-	LastName  string `query:"lastName" bson:"last_name,omitempty"`
-	Nickname  string `query:"nickname" bson:"nickname,omitempty"`
-	Email     string `query:"email" bson:"email,omitempty"`
-	Country   string `query:"country" bson:"country,omitempty"`
 }
 
 // Valid - returns true if the user is valid.
@@ -66,6 +52,27 @@ func (u *User) Modify(mod User) {
 	if u.Password != mod.Password {
 		u.Password = mod.Password
 	}
+}
+
+// MarshalBinary - custom encoding.BinaryMarshaler implementation
+// We need this to encode and decode when publishing into redis
+func (u User) MarshalBinary() ([]byte, error) {
+	return json.Marshal(u)
+}
+
+// PaginatedUsers - users pagination data
+type PaginatedUsers struct {
+	pagination.Paginated
+	Users []User `json:"users"`
+}
+
+// UserFilters - used when filtering users
+type UserFilters struct {
+	FirstName string `query:"firstName" bson:"first_name,omitempty"`
+	LastName  string `query:"lastName" bson:"last_name,omitempty"`
+	Nickname  string `query:"nickname" bson:"nickname,omitempty"`
+	Email     string `query:"email" bson:"email,omitempty"`
+	Country   string `query:"country" bson:"country,omitempty"`
 }
 
 // ToBsonM - converts the current UserFilters into bson.M in order to use it in mongodb

@@ -1,4 +1,4 @@
-docker/volumes/**
+docker/**/volumes/**
 __debug_bin
 bin/**
 !test/coverage

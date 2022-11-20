@@ -1,3 +1,4 @@
+basePath: /api/v1
 definitions:
   echo.HTTPError:
     properties:
@@ -46,6 +47,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: Faceit Users Microservices
+  title: Faceit Users Microservices
+  version: "1.0"
 paths:
   /users:
     get:
@@ -164,7 +168,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Gets a user by its id from the DB and returns it
+      description: Updates a user by its id with the given body data
       parameters:
       - description: User id
         in: path
@@ -196,5 +200,5 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/echo.HTTPError'
-      summary: Gets a user
+      summary: Updates a user
 swagger: "2.0"

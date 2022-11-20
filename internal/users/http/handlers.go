@@ -142,8 +142,8 @@ func (h httpHandler) GetUserByID(c echo.Context) error {
 
 // GetUserByID godoc
 //
-// @Summary     Gets a user
-// @Description Gets a user by its id from the DB and returns it
+// @Summary     Updates a user
+// @Description Updates a user by its id with the given body data
 // @Produce     json
 // @Accept      json
 // @Param       userId path     int         true "User id"

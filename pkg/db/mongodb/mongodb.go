@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"user-microservice/config"
 
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,9 +11,8 @@ import (
 )
 
 // NewMongoDatabase - creates a new mongodb connection and returns the database
-// FIXME: Add configuration as param instead of using hardcoded strings
-func NewMongoDatabase() (*mongo.Database, error) {
-	mongoOptions := options.Client().ApplyURI("mongodb://localhost:27017").SetRegistry(mongoRegistry)
+func NewMongoDatabase(cfg config.MongoConfig) (*mongo.Database, error) {
+	mongoOptions := options.Client().ApplyURI(cfg.URI).SetRegistry(mongoRegistry)
 	client, err := mongo.Connect(context.TODO(), mongoOptions)
 	if err != nil {
 		logrus.Errorf("Error in db/mongodb.NewMongoDatabase -> error connecting to db: %s", err)
@@ -30,7 +30,7 @@ func NewMongoDatabase() (*mongo.Database, error) {
 		return nil, err
 	}
 
-	db := client.Database("users-microservice")
+	db := client.Database(cfg.DB)
 
 	return db, nil
 }

@@ -24,3 +24,4 @@
   - We cannot reuse the logic in other parts of the application if needed.
   - If the use case layer has a new dependency, we have to modify the handlers instead (for example, the redis dependency; this dependency forced us to include it in the handlers instead on its corresponding layer)
   - Initially I used ObjectId() for \_id and string for id but I switched it to google uuid for \_id and dropped the id field. In the end  I used a simple string for the _id for simplicity.
+  - I thought of using a configuration file in yaml format and parsing it using viper, but I leave that undone for this version

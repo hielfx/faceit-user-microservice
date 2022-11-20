@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"user-microservice/config"
 	"user-microservice/internal/server"
 	"user-microservice/pkg/db/mongodb"
 	redisdb "user-microservice/pkg/db/redis"
@@ -13,7 +15,14 @@ import (
 // @BasePath    /api/v1
 func main() {
 
-	db, err := mongodb.NewMongoDatabase()
+	filepath := os.Getenv("CONFIG_FILE")
+
+	cfg, err := config.GetConfigFromFile(filepath)
+	if err != nil {
+		panic(err)
+	}
+
+	db, err := mongodb.NewMongoDatabase(cfg.Mongo)
 	if err != nil {
 		panic(err)
 	}
@@ -23,7 +32,7 @@ func main() {
 		}
 	}()
 
-	redisDB := redisdb.MewRedisDatabase()
+	redisDB := redisdb.MewRedisDatabase(cfg.Redis)
 	defer func() {
 		if err := redisDB.Close(); err != nil {
 			panic(err)
