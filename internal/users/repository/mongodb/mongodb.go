@@ -88,7 +88,7 @@ func (r mongodbRepository) DeleteById(ctx context.Context, id uuid.UUID) error {
 }
 
 // GetPaginatedUsers - returns a list of paginated user
-func (r mongodbRepository) GetPaginatedUsers(ctx context.Context, pag pagination.PaginationOptions) (models.PaginatedUsers, error) {
+func (r mongodbRepository) GetPaginatedUsers(ctx context.Context, pag pagination.PaginationOptions, filters models.UserFilters) (models.PaginatedUsers, error) {
 	pageSize := pag.Size
 	if pageSize <= 0 {
 		pageSize = pagination.DefaultSize
@@ -105,8 +105,10 @@ func (r mongodbRepository) GetPaginatedUsers(ctx context.Context, pag pagination
 		},
 	}
 
+	// filters := uFilters.ToBsonM()
+
 	//count how many users are stored
-	totalCount, err := r.db.CountDocuments(ctx, bson.M{})
+	totalCount, err := r.db.CountDocuments(ctx, filters)
 	if err != nil {
 		logrus.Errorf("Error in repository/mongodb.GetPaginatedUsers -> error executing count command: %s", err)
 		return res, nil
@@ -128,7 +130,7 @@ func (r mongodbRepository) GetPaginatedUsers(ctx context.Context, pag pagination
 	// }
 
 	// retrieve the users
-	cursor, err := r.db.Find(ctx, bson.M{}, findOptions)
+	cursor, err := r.db.Find(ctx, filters, findOptions)
 	if err != nil {
 		logrus.Errorf("Error in repository/mongodb.GetPaginatedUsers -> error executing find command: %s", err)
 		return res, nil
@@ -143,7 +145,7 @@ func (r mongodbRepository) GetPaginatedUsers(ctx context.Context, pag pagination
 	res.Users = users
 	res.TotalCount = totalCount
 	res.TotalPages = int64(math.Ceil(float64(totalCount) / float64(pageSize)))
-	res.HasMore = int64(currentPage) < totalCount/int64(pageSize)
+	res.HasMore = int64(currentPage) < int64(res.TotalPages)
 
 	return res, nil
 }

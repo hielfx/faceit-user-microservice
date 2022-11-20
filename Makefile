@@ -10,13 +10,14 @@ CGO_ENABLED ?= 0
 TEST_FLAGS := -race -failfast -cover -coverprofile=./test/coverage/c.out
 EXTRA_TEST_FLAGS ?= -v
 
+DC_DEV_FILE ?= docker-compose.dev.yaml
+DC_ARGS ?= ""
+
 .PHONY: all
 all: build
 
 .PHONY: build
-build: $(BINDIR)/$(BINNAME)
-
-$(BINDIR)/$(BINNAME):
+build:
 	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) $(GOBIN) build -trimpath -ldflags '$(LDFLAGS)' -o $(BINDIR)/$(BINNAME) $(MAINPATH)
 
 .PHONY: run
@@ -26,6 +27,10 @@ run:
 .PHONY: tidy
 tidy:
 	$(GOBIN) mod tidy
+
+.PHONY: vendor
+vendor:
+	$(GOBIN) mod vendor
 
 .PHONY: test
 test:
@@ -51,25 +56,23 @@ $(MOCKGEN):
 generate: $(MOCKGEN)
 	$(GOBIN) generate ./...
 
-.PHONY: compose-up-dev
-compose-up-dev:
-	docker compose -f docker-compose.dev.yaml up --remove-orphans -d
+.PHONY: dev-up
+dev-up:
+	docker compose -f $(DC_DEV_FILE) up --remove-orphans --build -d
 
-.PHONY: compose-dev
-compose-dev: compose-up-dev
+.PHONY: dev-down
+dev-down:
+	docker compose -f $(DC_DEV_FILE) down --remove-orphans
 
-.PHONY: compose-down-dev
-compose-down-dev:
-	docker compose -f docker-compose.dev.yaml down
-.PHONY: compose-ps-dev
-compose-ps-dev:
-	docker compose -f docker-compose.dev.yaml ps
+.PHONY: dev-exec
+dev-exec:
+	docker compose -f $(DC_DEV_FILE) $(DC_ARGS)
 
 $(SWAGGOSWAG):
 	(cd /; GO111MODULE=on $(GOBIN) install github.com/swaggo/swag/cmd/swag@latest)
 
 .PHONY: swag
-swag: $(SWAGGOSWAG)
+swag: $(SWAGGOSWAG) vendor
 	@echo "Running swaggo-swag"
-	swag init -g **/**/*.go
+	swag init --parseDependency --parseVendor --parseInternal  -g **/**/*.go --exclude ./vendor
 	swag fmt

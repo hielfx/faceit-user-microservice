@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"user-microservice/docs"
 	_ "user-microservice/docs"
 	usersHttp "user-microservice/internal/users/http"
 	usersRepo "user-microservice/internal/users/repository/mongodb"
@@ -40,7 +41,7 @@ func (s *Server) Run() error {
 	router := s.echo.Group(CurrentApiVersion)
 
 	//middlewares
-	router.Use(middleware.RemoveTrailingSlash())
+	// router.Use(middleware.RemoveTrailingSlash())
 	router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		// AllowOrigins: []string{"*"},
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete},
@@ -57,6 +58,7 @@ func (s *Server) Run() error {
 	})
 
 	// Swagger route
+	docs.SwaggerInfo.BasePath = CurrentApiVersion
 	router.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Initialize repositories

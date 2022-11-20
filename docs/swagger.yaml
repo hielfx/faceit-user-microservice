@@ -1,4 +1,164 @@
+definitions:
+  echo.HTTPError:
+    properties:
+      message: {}
+    type: object
+  models.PaginatedUsers:
+    properties:
+      currentPage:
+        type: integer
+      hasMore:
+        type: boolean
+      size:
+        type: integer
+      totalCount:
+        description: TotalCount is the number of elements that has the db
+        type: integer
+      totalPages:
+        description: TotalPages is the number of pages based on the total count
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  models.User:
+    properties:
+      country:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+      nickname:
+        type: string
+      password:
+        description: should be json:"-" in order to hide the password
+        type: string
+      updatedAt:
+        type: string
+    type: object
 info:
   contact: {}
-paths: {}
+paths:
+  /users:
+    get:
+      description: Gets a paginated users list from the db and returns it
+      parameters:
+      - description: Page to retrieve
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Country filter
+        in: query
+        name: country
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PaginatedUsers'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Gets paginated users
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user and inserts it in the DB
+      parameters:
+      - description: User to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Create a user
+  /users/{userId}:
+    get:
+      description: Gets a user by its id from the DB and returns it
+      parameters:
+      - description: User id
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Gets a user
+    post:
+      consumes:
+      - application/json
+      description: Deletes a user by its id from the DB
+      parameters:
+      - description: User id
+        in: path
+        name: userId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Deletes a user
 swagger: "2.0"

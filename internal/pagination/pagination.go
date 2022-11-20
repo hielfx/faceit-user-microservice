@@ -14,8 +14,8 @@ const (
 
 // PaginationOptions struct with the pagination data
 type PaginationOptions struct {
-	Size int `json:"size"`
-	Page int `json:"page"`
+	Size int `json:"size" query:"size"`
+	Page int `json:"page" query:"page"`
 	// OrderBy   string    `json:"orderBy"`   // OrderBy property to order by
 	// SortOrder SortOrder `json:"sortOrdet"` // Sort order (asc or desc)
 }

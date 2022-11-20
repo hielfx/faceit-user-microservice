@@ -10,6 +10,7 @@ import (
 )
 
 // NewMongoDatabase - creates a new mongodb connection and returns the database
+// FIXME: Add configuration as param instead of using hardcoded strings
 func NewMongoDatabase() (*mongo.Database, error) {
 	mongoOptions := options.Client().ApplyURI("mongodb://localhost:27017").SetRegistry(mongoRegistry)
 	client, err := mongo.Connect(context.TODO(), mongoOptions)
