@@ -11,7 +11,7 @@ db.users.insertMany([
     updated_at: new Date("2016-05-18T16:00:00Z"),
   },
   {
-    _id: "f4c9c17e-c260-4a0b-a1f1-a3f3ef6a3739",
+    _id: f4c9c17e-c260-4a0b-a1f1-a3f3ef6a3739,
     first_name: "User to delete first name 2",
     last_name: "User to delete last name 2",
     nickname: "User to delete nickname 2",

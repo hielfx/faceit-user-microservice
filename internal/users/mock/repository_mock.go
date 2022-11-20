@@ -11,7 +11,6 @@ import (
 	pagination "user-microservice/internal/pagination"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -53,7 +52,7 @@ func (mr *MockRepositoryMockRecorder) Create(ctx, user interface{}) *gomock.Call
 }
 
 // DeleteById mocks base method.
-func (m *MockRepository) DeleteById(ctx context.Context, id uuid.UUID) error {
+func (m *MockRepository) DeleteById(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteById", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -67,7 +66,7 @@ func (mr *MockRepositoryMockRecorder) DeleteById(ctx, id interface{}) *gomock.Ca
 }
 
 // GetById mocks base method.
-func (m *MockRepository) GetById(ctx context.Context, id uuid.UUID) (*models.User, error) {
+func (m *MockRepository) GetById(ctx context.Context, id string) (*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetById", ctx, id)
 	ret0, _ := ret[0].(*models.User)
@@ -82,18 +81,18 @@ func (mr *MockRepositoryMockRecorder) GetById(ctx, id interface{}) *gomock.Call 
 }
 
 // GetPaginatedUsers mocks base method.
-func (m *MockRepository) GetPaginatedUsers(ctx context.Context, pagination pagination.PaginationOptions) (models.PaginatedUsers, error) {
+func (m *MockRepository) GetPaginatedUsers(ctx context.Context, pagination pagination.PaginationOptions, filters models.UserFilters) (models.PaginatedUsers, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPaginatedUsers", ctx, pagination)
+	ret := m.ctrl.Call(m, "GetPaginatedUsers", ctx, pagination, filters)
 	ret0, _ := ret[0].(models.PaginatedUsers)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPaginatedUsers indicates an expected call of GetPaginatedUsers.
-func (mr *MockRepositoryMockRecorder) GetPaginatedUsers(ctx, pagination interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetPaginatedUsers(ctx, pagination, filters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaginatedUsers", reflect.TypeOf((*MockRepository)(nil).GetPaginatedUsers), ctx, pagination)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaginatedUsers", reflect.TypeOf((*MockRepository)(nil).GetPaginatedUsers), ctx, pagination, filters)
 }
 
 // Update mocks base method.

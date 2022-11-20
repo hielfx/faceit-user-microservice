@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 	httpErrors "user-microservice/internal/errors/http"
 	"user-microservice/internal/models"
+	"user-microservice/internal/pagination"
 	"user-microservice/internal/testutils"
 	userHttp "user-microservice/internal/users/http"
 	"user-microservice/internal/users/mock"
@@ -46,7 +49,7 @@ func TestCreateUser(t *testing.T) {
 			"Create user successfully",
 			validBody,
 			&models.User{
-				ID:        uuid.New(),
+				ID:        uuid.New().String(),
 				FirstName: "CreateUser FirstName",
 				LastName:  "CreateUser LastName",
 				Nickname:  "CreateUser Nickname",
@@ -130,9 +133,6 @@ func TestCreateUser(t *testing.T) {
 			mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(tc.mockedUser, tc.expectedError).Times(callTimes)
 
 			// When
-			if tc.name == "Create user with internal server error" {
-				fmt.Println("this")
-			}
 			err := userHandler.CreateUser(echoCtx)
 
 			// Then
@@ -145,7 +145,6 @@ func TestCreateUser(t *testing.T) {
 				require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
 
 				testutils.AssertUserBody(t, *tc.mockedUser, body, testutils.AssertUserConfig{})
-				//TODO: Assert password here
 			}
 		})
 	}
@@ -156,7 +155,7 @@ func TestDeleteUser(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
 		id             string
-		mockedId       uuid.UUID
+		mockedId       string
 		mockedError    error
 		expectedError  error
 		expectedCode   int
@@ -165,7 +164,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			"Delete user successfully",
 			userUUID.String(),
-			userUUID,
+			userUUID.String(),
 			nil,
 			nil,
 			http.StatusNoContent,
@@ -174,7 +173,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			"Delete user with error",
 			userUUID.String(),
-			userUUID,
+			userUUID.String(),
 			errors.New("homemade error"),
 			errors.New("homemade error"),
 			http.StatusInternalServerError,
@@ -183,7 +182,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			"Delete user with wrong id",
 			"invalid-user-id",
-			userUUID,
+			userUUID.String(),
 			nil,
 			echo.NewHTTPError(http.StatusBadRequest, "Invalid ID invalid-user-id"),
 			http.StatusBadRequest,
@@ -250,7 +249,7 @@ func TestGetUserByID(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
 		id             string
-		mockedID       uuid.UUID
+		mockedID       string
 		mockedUser     *models.User
 		mockedError    error
 		expectedCode   int
@@ -260,9 +259,9 @@ func TestGetUserByID(t *testing.T) {
 		{
 			"Get user successfully by id",
 			userUUID.String(),
-			userUUID,
+			userUUID.String(),
 			&models.User{
-				ID:        userUUID,
+				ID:        userUUID.String(),
 				FirstName: "Retrieved user FirstName",
 				LastName:  "Retrieved user LastName",
 				Nickname:  "Retrieved user Nickname",
@@ -280,7 +279,7 @@ func TestGetUserByID(t *testing.T) {
 		{
 			"Get user id not found error",
 			userUUID.String(),
-			userUUID,
+			userUUID.String(),
 			nil,
 			mongo.ErrNilDocument,
 			http.StatusNotFound,
@@ -290,7 +289,7 @@ func TestGetUserByID(t *testing.T) {
 		{
 			"Get user invalid id error",
 			"invalid-id",
-			userUUID,
+			userUUID.String(),
 			nil,
 			nil,
 			http.StatusBadRequest,
@@ -300,7 +299,7 @@ func TestGetUserByID(t *testing.T) {
 		{
 			"Get user internal server error",
 			userUUID.String(),
-			userUUID,
+			userUUID.String(),
 			nil,
 			errors.New("homemade error"),
 			http.StatusInternalServerError,
@@ -383,7 +382,7 @@ func TestUpdateUserByID(t *testing.T) {
 		"country": "Updated Country"
 	}`
 	validUser := models.User{
-		ID:        userID,
+		ID:        userID.String(),
 		FirstName: "Update user FirstName",
 		LastName:  "Update user LastName",
 		Nickname:  "Update user Nickname",
@@ -396,7 +395,7 @@ func TestUpdateUserByID(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		id               string
-		mockedID         uuid.UUID
+		mockedID         string
 		body             string
 		mockedUser       models.User
 		expectedCode     int
@@ -409,7 +408,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user by ID successfully",
 			userID.String(),
-			userID,
+			userID.String(),
 			validBody,
 			validUser,
 			http.StatusOK,
@@ -422,7 +421,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with wrong id",
 			"wrong-id",
-			userID,
+			userID.String(),
 			"{}",
 			models.User{},
 			http.StatusBadRequest,
@@ -435,7 +434,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with empty body",
 			userID.String(),
-			userID,
+			userID.String(),
 			`{}`,
 			models.User{},
 			http.StatusBadRequest,
@@ -448,7 +447,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with invalid body",
 			userID.String(),
-			userID,
+			userID.String(),
 			"invalid-body",
 			models.User{},
 			http.StatusBadRequest,
@@ -461,7 +460,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with invalid fields",
 			userID.String(),
-			userID,
+			userID.String(),
 			`{
 				"firstName": true,
 				"lastName": 124.78,
@@ -481,7 +480,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with not found error",
 			userID.String(),
-			userID,
+			userID.String(),
 			`{}`,
 			models.User{},
 			http.StatusNotFound,
@@ -494,7 +493,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with internal server error by get",
 			userID.String(),
-			userID,
+			userID.String(),
 			`{}`,
 			models.User{},
 			http.StatusInternalServerError,
@@ -507,7 +506,7 @@ func TestUpdateUserByID(t *testing.T) {
 		{
 			"Update user with internal server error by update",
 			userID.String(),
-			userID,
+			userID.String(),
 			validBody,
 			validUser,
 			http.StatusInternalServerError,
@@ -568,6 +567,141 @@ func TestUpdateUserByID(t *testing.T) {
 						Value:  tc.mockedUser.CreatedAt,
 					},
 				})
+			}
+		})
+	}
+}
+
+func TestGetAllUsers(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		pagination     pagination.PaginationOptions
+		mockedRes      models.PaginatedUsers
+		filters        map[string]string
+		mockedFilters  models.UserFilters
+		statusCode     int
+		expectedError  error
+		mockedError    error
+		shouldCallRepo bool
+	}{
+		{
+			"Get paginated users successfully",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 2,
+			},
+			models.PaginatedUsers{
+				Paginated: pagination.Paginated{
+					TotalCount:  10,
+					TotalPages:  5,
+					CurrentPage: 1,
+					Size:        2,
+					HasMore:     true,
+				},
+				Users: []models.User{
+					{ID: uuid.New().String()},
+					{ID: uuid.New().String()},
+				},
+			},
+			map[string]string{},
+			models.UserFilters{},
+			http.StatusOK,
+			nil,
+			nil,
+			true,
+		},
+		{
+			"Get paginated users with filters",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 2,
+			},
+			models.PaginatedUsers{
+				Paginated: pagination.Paginated{
+					TotalCount:  10,
+					TotalPages:  5,
+					CurrentPage: 1,
+					Size:        2,
+					HasMore:     true,
+				},
+				Users: []models.User{
+					{ID: uuid.New().String()},
+					{ID: uuid.New().String()},
+				},
+			},
+			map[string]string{
+				"country": "UK",
+			},
+			models.UserFilters{
+				Country: "UK",
+			},
+			http.StatusOK,
+			nil,
+			nil,
+			true,
+		},
+		{
+			"Get paginated users with get error",
+			pagination.PaginationOptions{},
+			models.PaginatedUsers{},
+			map[string]string{},
+			models.UserFilters{},
+			http.StatusInternalServerError,
+			errors.New("homemade error"),
+			errors.New("homemade error"),
+			true,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			//Given
+			q := make(url.Values)
+			q.Set("page", strconv.Itoa(tc.pagination.Page))
+			q.Set("size", strconv.Itoa(tc.pagination.Size))
+			for k, v := range tc.filters {
+				q.Set(k, v)
+			}
+			req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+
+			rec := httptest.NewRecorder()
+			e := echo.New()
+			c := e.NewContext(req, rec)
+			// c.SetPath("/users?" + q.Encode())
+			// paramNames := []string{"page", "size"}
+			// paramValues := []string{strconv.Itoa(tc.pagination.Page), strconv.Itoa(tc.pagination.Size)}
+			// for k, v := range tc.filters {
+			// 	paramNames = append(paramNames, k)
+			// 	paramValues = append(paramValues, v)
+			// }
+			// c.SetParamNames(paramNames...)
+			// c.SetParamValues(paramValues...)
+
+			ctrl := gomock.NewController(t)
+			userRepo := mock.NewMockRepository(ctrl)
+			h := userHttp.NewHttpHandler(userRepo)
+
+			callTimes := 0
+			if tc.shouldCallRepo {
+				callTimes = 1
+			}
+			userRepo.EXPECT().GetPaginatedUsers(context.TODO(), tc.pagination, tc.mockedFilters).Return(tc.mockedRes, tc.mockedError).Times(callTimes)
+
+			//When
+			err := h.GetAllUsers(c)
+
+			//Then
+			if tc.expectedError != nil {
+				testutils.AssertExpectedErrorsHttpReponse(t, tc.statusCode, rec.Code, tc.expectedError, err)
+			} else {
+				assert.Equalf(t, http.StatusOK, rec.Code, "Expected status code to be %d, but was %d", http.StatusOK, rec.Code)
+				require.NoErrorf(t, err, "Expected no error but was %s", err)
+
+				var body models.PaginatedUsers
+				err := json.Unmarshal(rec.Body.Bytes(), &body)
+				require.NoErrorf(t, err, "Expected no error when unmarshaling body, but was %s", err)
+				assert.Equalf(t, tc.mockedRes, body, "Expected body to be %s, but was %s", tc.mockedRes, body)
 			}
 		})
 	}

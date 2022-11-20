@@ -8,8 +8,8 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - ./docker/volumes/mongo:/data/db
-    #   - ./init-db.js:/docker-entrypoint-initdb.d/init.js
+      - ./docker/dev/init-db.js:/docker-entrypoint-initdb.d/init.js
+      # - ./docker/volumes/mongo:/data/db
 
   pubsub:
     image: redis:6

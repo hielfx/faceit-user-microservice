@@ -49,7 +49,7 @@ func TestMongoDBRepository_Create(t *testing.T) {
 		{
 			"Create user successfully overrides ID and Dates",
 			models.User{
-				ID:        uuid.New(),
+				ID:        uuid.New().String(),
 				FirstName: "First Name",
 				LastName:  "Last name",
 				Nickname:  "Nickname",
@@ -65,7 +65,7 @@ func TestMongoDBRepository_Create(t *testing.T) {
 		{
 			"Create user with already existing ID",
 			models.User{
-				ID:        uuid.MustParse("29621CF9C9894266A5A2085FD99A75E1"),
+				ID:        "29621CF9C9894266A5A2085FD99A75E1",
 				FirstName: "Already existing user id First Name",
 				LastName:  "Already existing user id Last name",
 				Nickname:  "Already existing user id Nickname",
@@ -126,21 +126,21 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 	require.NoError(t, err, "Expected no error when initializing updatedAt")
 	for _, tc := range []struct {
 		name           string
-		id             uuid.UUID
+		id             string
 		expectedResult *models.User
 		expectedError  error
 	}{
 		{
 			"Get user by ID successfully",
-			uuid.MustParse("0889A9BDB7084A6898F0D0BADE13B5F3"),
+			"ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4",
 			&models.User{
-				ID:        uuid.MustParse("0889A9BDB7084A6898F0D0BADE13B5F3"),
+				ID:        "ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4",
 				FirstName: "Already inserted user first name 1",
-				LastName:  "Already inserted user last name 1",
+				LastName:  "Tingo",
 				Nickname:  "Already inserted user nickname 1",
 				Password:  "Already inserted user password 1",
 				Email:     "Already inserted user email 1",
-				Country:   "Already inserted user country 1",
+				Country:   "GE",
 				CreatedAt: createdAt,
 				UpdatedAt: updatedAt,
 			},
@@ -148,7 +148,7 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 		},
 		{
 			"Get not found user by ID",
-			uuid.MustParse("C43DF343FFB343DA9BB0B08B81E6FCD9"),
+			"C43DF343FFB343DA9BB0B08B81E6FCD9",
 			nil,
 			mongo.ErrNoDocuments,
 		},
@@ -194,17 +194,17 @@ func TestMongoDBRepository_GetById(t *testing.T) {
 func TestMongoDBRepository_DeleteById(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
-		id            uuid.UUID
+		id            string
 		expectedError error
 	}{
 		{
 			"Delete user by id successfully",
-			uuid.MustParse("19957751A78944D4BC3B87390B0E7C0A"),
+			"f4c9c17e-c260-4a0b-a1f1-a3f3ef6a3739",
 			nil,
 		},
 		{
 			"Delete user not found with error",
-			uuid.New(),
+			uuid.New().String(),
 			nil,
 		},
 	} {
@@ -236,18 +236,20 @@ func TestMongoDBRepository_DeleteById(t *testing.T) {
 }
 
 type expected struct {
-	err         error
-	equalLength bool
-	equalPage   bool
-	equalSize   bool
-	hasMore     bool
+	err          error
+	equalLength  bool
+	equalPage    bool
+	equalSize    bool
+	hasMore      bool
+	checkFilters bool
 }
 
 func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		pgOpts   pagination.PaginationOptions
-		expected expected
+		name       string
+		pgOpts     pagination.PaginationOptions
+		filterOpts models.UserFilters
+		expected   expected
 	}{
 		{
 			"Get paginated users with all pgOptions success",
@@ -257,6 +259,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				// OrderBy:   "_id",
 				// SortOrder: pagination.SortOrderAsc,
 			},
+			models.UserFilters{},
 			expected{
 				equalLength: true,
 				equalPage:   true,
@@ -270,6 +273,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				Page: -1,
 				Size: 2,
 			},
+			models.UserFilters{},
 			expected{
 				equalSize:   true,
 				equalLength: true,
@@ -282,6 +286,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				Page: 2,
 				Size: -1,
 			},
+			models.UserFilters{},
 			expected{
 				equalPage: true,
 				hasMore:   false,
@@ -293,6 +298,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				Page: -1,
 				Size: -1,
 			},
+			models.UserFilters{},
 			expected{
 				hasMore: false,
 			},
@@ -300,6 +306,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 		{
 			"Get paginated users with zero values",
 			pagination.PaginationOptions{},
+			models.UserFilters{},
 			expected{
 				hasMore: false,
 			},
@@ -310,10 +317,79 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				Page: 1,
 				Size: 100,
 			},
+			models.UserFilters{},
 			expected{
 				hasMore:   false,
 				equalPage: true,
 				equalSize: true,
+			},
+		},
+		{
+			"Get paginated users filters by firstName",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 2,
+			},
+			models.UserFilters{
+				FirstName: "Already inserted user first name 5",
+			},
+			expected{
+				hasMore:      false,
+				equalPage:    true,
+				equalSize:    true,
+				checkFilters: true,
+			},
+		},
+		{
+			"Get paginated users filters by lastName",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 2,
+			},
+			models.UserFilters{
+				LastName: "Tingo",
+			},
+			expected{
+				hasMore:      false,
+				equalPage:    true,
+				equalSize:    true,
+				checkFilters: true,
+				equalLength:  true,
+			},
+		},
+		{
+			"Get paginated users filters by country",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 2,
+			},
+			models.UserFilters{
+				Country: "ES",
+			},
+			expected{
+				hasMore:      false,
+				equalPage:    true,
+				equalSize:    true,
+				checkFilters: true,
+				equalLength:  true,
+			},
+		},
+		//TODO: Check by other filters
+		{
+			"Get paginated users filters several filters with results",
+			pagination.PaginationOptions{
+				Page: 1,
+				Size: 2,
+			},
+			models.UserFilters{
+				Country:  "ES",
+				LastName: "Tingo",
+			},
+			expected{
+				hasMore:      false,
+				equalPage:    true,
+				equalSize:    true,
+				checkFilters: true,
 			},
 		},
 	} {
@@ -326,7 +402,7 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 			ctx := context.TODO()
 
 			//When
-			res, err := mongoRepository.GetPaginatedUsers(ctx, tc.pgOpts)
+			res, err := mongoRepository.GetPaginatedUsers(ctx, tc.pgOpts, tc.filterOpts)
 
 			//Then
 			if tc.expected.err != nil {
@@ -359,6 +435,26 @@ func TestMongoDBRepository_GetPaginatedUsers(t *testing.T) {
 				assert.Equalf(t, tc.expected.hasMore, res.HasMore, "Expected HasMore to be %t but was %t", tc.expected.hasMore, res.HasMore)
 				assert.Greater(t, res.TotalCount, int64(0), "Expected TotalCount to be greater than %d, but was %d", int64(0), res.TotalCount)
 				assert.Greaterf(t, res.TotalPages, int64(0), "Expected TotalPages to be greater than %d, but was %d", int64(0), res.TotalPages)
+
+				if tc.expected.checkFilters {
+					for _, user := range res.Users {
+						if tc.filterOpts.FirstName != "" {
+							assert.Equalf(t, tc.filterOpts.FirstName, user.FirstName, "Expected FirstName to be %s, but was %s", tc.filterOpts.FirstName, user.FirstName)
+						}
+						if tc.filterOpts.LastName != "" {
+							assert.Equalf(t, tc.filterOpts.LastName, user.LastName, "Expected LastName to be %s, but was %s", tc.filterOpts.LastName, user.LastName)
+						}
+						if tc.filterOpts.Email != "" {
+							assert.Equalf(t, tc.filterOpts.Email, user.Email, "Expected Email to be %s, but was %s", tc.filterOpts.Email, user.Email)
+						}
+						if tc.filterOpts.Nickname != "" {
+							assert.Equalf(t, tc.filterOpts.Nickname, user.Nickname, "Expected Nickname to be %s, but was %s", tc.filterOpts.Nickname, user.Nickname)
+						}
+						if tc.filterOpts.Country != "" {
+							assert.Equalf(t, tc.filterOpts.Country, user.Country, "Expected Country to be %s, but was %s", tc.filterOpts.Country, user.Country)
+						}
+					}
+				}
 			}
 
 		})
@@ -374,7 +470,7 @@ func TestMongoDBRepository_UpdateUser(t *testing.T) {
 		{
 			"Update user successfully",
 			models.User{
-				ID:        uuid.MustParse("B0DD43EE6BBA49A5929C9A880CFCB285"),
+				ID:        "7f598128-fb35-4ced-b80f-c5b5f66bd583",
 				FirstName: "Modified FirstName",
 				LastName:  "Modified LastName",
 				Nickname:  "Modified Nickname",
@@ -387,7 +483,7 @@ func TestMongoDBRepository_UpdateUser(t *testing.T) {
 		{
 			"Update user successfully with empty values",
 			models.User{
-				ID:        uuid.MustParse("88A094E8F65E45709B244DBFD38D9808"),
+				ID:        "ca1b8cc6-c34d-4959-aa10-4f6fe30b6a75",
 				FirstName: "",
 				LastName:  "",
 				Nickname:  "",
@@ -400,7 +496,7 @@ func TestMongoDBRepository_UpdateUser(t *testing.T) {
 		{
 			"Update user successfully without modifying dates",
 			models.User{
-				ID:        uuid.MustParse("EB8BA910080A4309937A3D611CDD6B72"),
+				ID:        "2b875247-90a1-4d66-8c22-1a53a265d180",
 				FirstName: "Modified FirstName",
 				LastName:  "Modified LastName",
 				Nickname:  "Modified Nickname",
@@ -415,7 +511,7 @@ func TestMongoDBRepository_UpdateUser(t *testing.T) {
 		{
 			"Update user with not found ID",
 			models.User{
-				ID: uuid.MustParse("B535F5174BE244DF820D3C3F886DA2A2"),
+				ID: "B535F5174BE244DF820D3C3F886DA2A2",
 			},
 			mongo.ErrNoDocuments,
 		},

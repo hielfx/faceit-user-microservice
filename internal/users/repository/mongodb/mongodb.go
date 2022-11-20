@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 	"user-microservice/internal/models"
 	"user-microservice/internal/pagination"
@@ -31,7 +32,7 @@ func NewMongoDBRepository(db *mongo.Database) users.Repository {
 
 // Create - inserts the user into the database and returns the updated version
 func (r mongodbRepository) Create(ctx context.Context, user models.User) (*models.User, error) {
-	user.ID = uuid.New()
+	user.ID = strings.ToLower(uuid.New().String())
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
 
@@ -44,9 +45,9 @@ func (r mongodbRepository) Create(ctx context.Context, user models.User) (*model
 }
 
 // GetById - retrieves the user with the given ID
-func (r mongodbRepository) GetById(ctx context.Context, id uuid.UUID) (*models.User, error) {
+func (r mongodbRepository) GetById(ctx context.Context, id string) (*models.User, error) {
 	var res models.User
-	if err := r.db.FindOne(ctx, bson.M{"_id": id}).Decode(&res); err != nil {
+	if err := r.db.FindOne(ctx, bson.M{"_id": strings.ToLower(id)}).Decode(&res); err != nil {
 		if err != mongo.ErrNoDocuments {
 			logrus.Errorf("Error in repository/mongodb.GetById -> error: %s", err)
 		}
@@ -78,7 +79,7 @@ func (r mongodbRepository) Update(ctx context.Context, user models.User) (*model
 }
 
 // DeleteById - removes the user with the given ID from the DB
-func (r mongodbRepository) DeleteById(ctx context.Context, id uuid.UUID) error {
+func (r mongodbRepository) DeleteById(ctx context.Context, id string) error {
 	if _, err := r.db.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
 		logrus.Errorf("Error in repository/mongodb.DeleteById -> error: %s", err)
 		return err
