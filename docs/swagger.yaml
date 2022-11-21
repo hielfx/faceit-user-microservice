@@ -63,6 +63,22 @@ paths:
         in: query
         name: size
         type: integer
+      - description: FirstName filter
+        in: query
+        name: firstName
+        type: string
+      - description: LastName filter
+        in: query
+        name: lastName
+        type: string
+      - description: Email filter
+        in: query
+        name: email
+        type: string
+      - description: Nickname filter
+        in: query
+        name: nickname
+        type: string
       - description: Country filter
         in: query
         name: country

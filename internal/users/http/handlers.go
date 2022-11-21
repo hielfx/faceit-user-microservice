@@ -82,12 +82,16 @@ func (h httpHandler) CreateUser(c echo.Context) error {
 // @Summary     Gets paginated users
 // @Description Gets a paginated users list from the db and returns it
 // @Produce     json
-// @Param       page    query    int    false "Page to retrieve"
-// @Param       size    query    int    false "Page size"
-// @Param       country query    string false "Country filter"
-// @Success     200     {object} models.PaginatedUsers
-// @Failure     400     {object} echo.HTTPError
-// @Failure     500     {object} echo.HTTPError
+// @Param       page      query    int    false "Page to retrieve"
+// @Param       size      query    int    false "Page size"
+// @Param       firstName query    string false "FirstName filter"
+// @Param       lastName  query    string false "LastName filter"
+// @Param       email     query    string false "Email filter"
+// @Param       nickname  query    string false "Nickname filter"
+// @Param       country   query    string false "Country filter"
+// @Success     200       {object} models.PaginatedUsers
+// @Failure     400       {object} echo.HTTPError
+// @Failure     500       {object} echo.HTTPError
 // @Router      /users [get]
 func (h httpHandler) GetAllUsers(c echo.Context) error {
 

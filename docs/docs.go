@@ -38,6 +38,30 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "FirstName filter",
+                        "name": "firstName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "LastName filter",
+                        "name": "lastName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email filter",
+                        "name": "email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nickname filter",
+                        "name": "nickname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Country filter",
                         "name": "country",
                         "in": "query"

@@ -106,11 +106,21 @@
 
 ## Building the project binary
 
+In order to build the project binary, execute the following command:
+
 ```sh
 make
 ```
 
-The binary will be created in `./bin/users-microservice`
+The binary will be created in `./bin/users-microservice` and can be run with
+
+```sh
+CONFIG_FILE=config_file_location.yaml ./bin/users-microservice
+```
+
+The CONFIG_FILE variable is need for the project to run, also both redis and mongodb database already up and running.
+
+You can run the project easily in the following section.
 
 ## Running the project
 
