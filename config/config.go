@@ -6,8 +6,14 @@ import (
 )
 
 type Config struct {
-	Mongo MongoConfig
-	Redis RedisConfig
+	Server ServerConfig
+	Mongo  MongoConfig
+	Redis  RedisConfig
+}
+
+type ServerConfig struct {
+	Addr string
+	Port int
 }
 
 type MongoConfig struct {

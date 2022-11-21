@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"user-microservice/config"
 	"user-microservice/docs"
 	_ "user-microservice/docs"
 	usersHttp "user-microservice/internal/users/http"
@@ -27,16 +29,17 @@ type Server struct {
 	db      *mongo.Database
 	echo    *echo.Echo
 	redisDB *redis.Client
+	config  *config.Config
 }
 
 // New - returns a newly initialized server
-func New(db *mongo.Database, redisDB *redis.Client) *Server {
-	return NewWithEcho(db, echo.New(), redisDB)
+func New(db *mongo.Database, redisDB *redis.Client, cfg *config.Config) *Server {
+	return NewWithEcho(db, echo.New(), redisDB, cfg)
 }
 
 // NewWithEcho - same as New but with a given echo.Echo
-func NewWithEcho(db *mongo.Database, e *echo.Echo, redisDB *redis.Client) *Server {
-	return &Server{db, e, redisDB}
+func NewWithEcho(db *mongo.Database, e *echo.Echo, redisDB *redis.Client, cfg *config.Config) *Server {
+	return &Server{db, e, redisDB, cfg}
 }
 
 // Run - Executes the server and starts it
@@ -76,7 +79,15 @@ func (s *Server) Run() error {
 	usersHttp.AppendUsersRoutes(router.Group(UsersPath), usersHandler)
 
 	//Start the server
-	if err := s.echo.Start(":4040"); err != nil {
+	addr := "0.0.0.0"
+	port := 4040
+	if s.config.Server.Addr != "" {
+		addr = s.config.Server.Addr
+	}
+	if s.config.Server.Port != 0 {
+		port = s.config.Server.Port
+	}
+	if err := s.echo.Start(fmt.Sprintf("%s:%d", addr, port)); err != nil {
 		return err
 	}
 

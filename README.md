@@ -5,7 +5,17 @@
 ## Table of content
 
 - [Project structure](#project-structure)
-- [Asumptions, Desitions and Things to change](#asumptions-desitions-and-things-to-change)
+- [Prerequisites](#prerequisites)
+- [Building the project binary](#building-the-project-binary)
+- [Running the project](#running-the-project)
+  - [Running in "local" mode](#running-in-local-mode)
+  - [Running in "development" mode](#running-in-development-mode)
+  - [Project API Routes](#project-api-routes)
+- [Testing the project](#testing-the-project)
+- [Generating a new Swagger documentation (update the documentation)](#generating-a-new-swagger-documentation-update-the-documentation)
+- [Generating new repository mocks](#generating-new-repository-mocks)
+- [Asumptions, Desitions and Things to change/improve](#asumptions-desitions-and-things-to-changeimprove)
+- [Deploment to production](#deploment-to-production)
 
 ## Project structure
 
@@ -87,7 +97,147 @@
     └── coverage                    # Test coverage output folder
 ```
 
-## Asumptions, Desitions and Things to change
+## Prerequisites
+
+- **Docker** (used `Docker version 20.10.21, build baeda1f`)
+- **Docker compose** (used `Docker Compose version v2.12.2`)
+- **Make** (used `GNU Make 3.81`)
+- **Go** (used `go version go1.19.2 darwin/amd64`)
+
+## Building the project binary
+
+```sh
+make
+```
+
+The binary will be created in `./bin/users-microservice`
+
+## Running the project
+
+For the project to run, it's necessary to have an already running mongodb instance and a redis instance.
+
+For ease of use, there are 2 ways of running this project: local and development mode.
+
+The main difference is development mode builds the project, along with a subscriber sidecar and the databases; while the local mode just starts the mongodb and redis database, using both docker-compose
+
+### Running in "local" mode
+
+To run the project in "local" mode, first the databses should be already up. The following commands will start the databases and the project:
+
+```sh
+make local-up # starts mongodb and redis
+make run # starts the application server 
+```
+
+In order to run the subscriber/listener sidecar, run the following command in a separate terminal:
+
+```sh
+make subscriber
+```
+
+The `make local-up` will create a `volumes` folder in `./docker/local/volumes` which contains both volumes for mongodb and redis.
+
+To stop the databases:
+
+```sh
+make local-stop
+```
+
+To execute docker-compose down run:
+
+```sh
+make local-down
+```
+
+*NOTE: It will NOT delete the volumes folder, it has to be done manually if required*
+
+### Running in "development" mode
+
+To run the project in "development" mode, run the following command:
+
+```sh
+make dev-up
+```
+
+It will create a `volumes` folder in `./docker/dev/volumes` which contains both volumes for mongodb and redis.
+
+To stop the project:
+
+```sh
+make dev-stop
+```
+
+To execute docker-compose down run:
+
+```sh
+make dev-down
+```
+
+*NOTE: It will NOT delete the volumes folder, it has to be done manually if required*
+
+### Project API Routes
+
+- `GET /api/v1/health` -> Simple health check (is not that useful tbh)
+  
+- `GET /api/v1/swagger/index.html` -> Swagger documentation
+
+- `GET /api/v1/users` -> Gets the paginated users
+- `GET /api/v1/users/:userId` -> Gets the user by its id
+- `POST /api/v1/users` -> Creates a new user
+- `POST /api/v1/users/:userId` -> Updates the user by its id
+- `DELETE /api/v1/users/:userId` -> Deletes the user by its id
+
+## Testing the project
+
+To test the project, run the following command:
+
+```sh
+make test
+```
+
+*NOTE: Docker is necessary to run the repository tests, because it will start a new mongodb docker container*
+
+For the test coverage, run the following command:
+
+```sh
+make coverage # `make cover` also works
+```
+
+This command will retrigger the `make test` command and the execute the coverage, so it's not necessary to execute the test first. In case you wanted to execute the coverage only, you can do it with the following command:
+
+```sh
+make coverage-only # `make cover-only` also works
+```
+
+There's a variable called `EXTRA_TEST_FLAGS` that, by default, as `-v` value. In order to deactivate the `verbosity`, you can run the test as following (you can use this to pass extra flags, but the current `TEST_FLAGS` cannot be overwritten):
+
+```sh
+EXTRA_TEST_FLAGS= make test
+```
+
+## Generating a new Swagger documentation (update the documentation)
+
+In order to update the Swagger documentation, it's necessary to run the following command
+
+```sh
+make swag
+```
+
+This command will read the project files and generate the documentation based on the [swaggo-swag declarative comments](https://github.com/swaggo/swag#declarative-comments-format).
+
+The url can be accesible (once the server is up and running) at `/api/v1/swagger/index.html`
+
+## Generating new repository mocks
+
+The repository mocks have been generated using [gomock and mockgen](https://github.com/golang/mock) and the generated files should not be modified. To generate the mocks again, execute the following command:
+
+```sh
+make generate
+```
+
+## Asumptions, Desitions and Things to change/improve
+
+This section contains the asumptions, desitions made during the development and things to change/improve in no particular order, just as they came to mi mind. It would've been better for us if I organized this section a little bit.
 
 - User password will be clear text for simplicity: no bcrypt, no hashing, no hiding in JSON responses, etc. This is for the same reasoning the login is not provided.
 - There should be more edge cases when testing
@@ -100,4 +250,22 @@
   - We cannot reuse the logic in other parts of the application if needed.
   - If the use case layer has a new dependency, we have to modify the handlers instead (for example, the redis dependency; this dependency forced us to include it in the handlers instead on its corresponding layer)
   - Initially I used ObjectId() for \_id and string for id but I switched it to google uuid for \_id and dropped the id field. In the end  I used a simple string for the _id for simplicity.
-  - I thought of using a configuration file in yaml format and parsing it using viper, but I leave that undone for this version
+  - There should be a gracefuly shutdown flow to stop the server, but it's not imlpemented yet.
+  - It should be good to inject some values in build time, such as the git tag, architecture, os, etc. to the binary, providing a way to print it and check it.
+  - MongoDB was selected instead of MySQL to use a different database than the one I usually use. This derived in some troubles with the use of the `_id` and the new `mongo-go` driver (`mgo.v2` is now unmaintained).
+  
+## Deploment to production
+
+The current configuration doesn't provide a way to deploy the application to production, so I will focus on "how I would do it":
+
+1. You can still use the Dockerfile to build the application docker image.
+2. The image could be pushed to AWS ECR, so it could be accesible later.
+3. The application could be deployed to a Kubernetes cluster. For that we would need at least:
+   1. A namespace
+   2. A config map to store the config file
+   3. A Deployment specification with the config file as volume and the CONFIG_FILE environment variable.
+   4. A service specification to expose the deployment
+   5. A ingress specification for us the access the application with a domain (we would need a ingress controller. One option could be the [INGRESS-NGINX controller](https://kubernetes.github.io/ingress-nginx/)).
+   6. If we want to generate the domain certificates, we could use [cert-manager with NGINX-ingress](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/)
+   7. We would also need access to a MongoDB and a Redis database, already configured in the config file.
+4. In order to deploy all of this, we could us [Github Actions](https://docs.github.com/en/actions) to automate the docker build, push and K8s deployment every time we push a new git tag

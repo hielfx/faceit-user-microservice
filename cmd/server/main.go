@@ -39,7 +39,7 @@ func main() {
 		}
 	}()
 
-	s := server.New(db, redisDB)
+	s := server.New(db, redisDB, cfg)
 	defer func() {
 		if err := s.Cleanup(); err != nil {
 			panic(err)

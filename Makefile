@@ -1,21 +1,29 @@
+# Project variables
 MAINPATH := ./cmd/server
 BINDIR := $(CURDIR)/bin
 BINNAME ?= users-microservice
 
+# Go binary location (usefull when using multiple go versions)
 GOBIN ?= $(shell which go)
 
+# Go commands flags
 PKG := ./...
 LDFLAGS := -w -s
 CGO_ENABLED ?= 0
 TEST_FLAGS := -race -failfast -cover -coverprofile=./test/coverage/c.out
 EXTRA_TEST_FLAGS ?= -v
 
+# Docker compose configs
 DC_DEV_FILE ?= docker-compose.dev.yaml
 DC_LOCAL_FILE ?= docker-compose.local.yaml
 DC_ARGS ?= ""
 
+# Project config files
 CONFIG_FILE_LOCAL := $(CURDIR)/config/local.yaml
 CONFIG_FILE_DEV := $(CURDIR)/config/dev.yaml
+
+# =====================================================
+# Main commands 
 
 .PHONY: all
 all: build
@@ -32,6 +40,13 @@ endif
 run:
 	CONFIG_FILE=$(CONFIG_FILE) $(GOBIN) run $(MAINPATH)
 
+.PHONY: test
+test:
+	$(GOBIN) test $(TEST_FLAGS) $(EXTRA_TEST_FLAGS) ./...
+
+# =====================================================
+# Dependencies
+
 .PHONY: tidy
 tidy:
 	$(GOBIN) mod tidy
@@ -40,9 +55,8 @@ tidy:
 vendor:
 	$(GOBIN) mod vendor
 
-.PHONY: test
-test:
-	$(GOBIN) test $(TEST_FLAGS) $(EXTRA_TEST_FLAGS) ./...
+# =====================================================
+# Test coverage
 
 .PHONY: cover
 cover: test cover-only
@@ -57,6 +71,9 @@ coverage-only:
 .PHONY: cover-only
 cover-only: coverage-only
 
+# =====================================================
+# Tools
+
 $(MOCKGEN):
 	(cd /; GO111MODULE=on $(GOBIN) install github.com/golang/mock/mockgen@v1.6.0)
 
@@ -64,9 +81,25 @@ $(MOCKGEN):
 generate: $(MOCKGEN)
 	$(GOBIN) generate ./...
 
+$(SWAGGOSWAG):
+	(cd /; GO111MODULE=on $(GOBIN) install github.com/swaggo/swag/cmd/swag@latest)
+
+.PHONY: swag
+swag: $(SWAGGOSWAG) vendor
+	@echo "Running swaggo-swag"
+	swag init --parseDependency --parseVendor --parseInternal  -g **/**/*.go --exclude ./vendor
+	swag fmt
+
+# =====================================================
+# Docker compose commands
+
 .PHONY: dev-up
 dev-up:
 	docker compose -f $(DC_DEV_FILE) up --remove-orphans --build -d
+
+.PHONY: dev-stop
+dev-stop:
+	docker compose -f $(DC_DEV_FILE) stop
 
 .PHONY: dev-down
 dev-down:
@@ -80,6 +113,10 @@ dev-exec:
 local-up:
 	docker compose -f $(DC_LOCAL_FILE) up --remove-orphans --build -d
 
+.PHONY: local-stop
+local-stop:
+	docker compose -f $(DC_LOCAL_FILE) stop
+
 .PHONY: local-down
 local-down:
 	docker compose -f $(DC_LOCAL_FILE) down --remove-orphans
@@ -88,14 +125,8 @@ local-down:
 local-exec:
 	docker compose -f $(DC_LOCAL_FILE) $(DC_ARGS)
 
-$(SWAGGOSWAG):
-	(cd /; GO111MODULE=on $(GOBIN) install github.com/swaggo/swag/cmd/swag@latest)
-
-.PHONY: swag
-swag: $(SWAGGOSWAG) vendor
-	@echo "Running swaggo-swag"
-	swag init --parseDependency --parseVendor --parseInternal  -g **/**/*.go --exclude ./vendor
-	swag fmt
+# =====================================================
+# Subscriber sidecar
 
 .PHONY: subscriber
 ifeq ($(CONFIG_FILE),)
