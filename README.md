@@ -9,7 +9,83 @@
 
 ## Project structure
 
-//TODO
+```
+.
+├── Dockerfile                      # Dockerfile for the main app (./cmd/server)
+├── Makefile
+├── README.md
+├── cmd
+│   ├── server
+│   │   └── main.go                 # Main application (the actual server)
+│   └── subscriber
+│       └── main.go                 # Sidecar application to check the pub-sub flows (this is a subscriber/listener)
+├── config
+│   ├── config.go                   # Configuration reader and parser
+│   ├── dev.yaml                    # Configuration for development environment (docker-compose with applications)
+│   └── local.yaml                  # Configuration for local development (docker-compose with db only)
+├── docker
+│   ├── dev
+│   │   ├── Dockerfile.subscriber   # Dockerfile for the subscriber sidecar
+│   │   └── init-db.js              # Initialize mongodb with some data for development environment
+│   └── local
+│       └── init-db.js              # Initialize mongodb with some data for local environment
+├── docker-compose.dev.yaml         # Docker compose file for development environment
+├── docker-compose.local.yaml       # Docker compose file for local environment
+├── docs                            # Generated Swagger API documentation (`make swag`)
+│   ├── docs.go
+│   ├── swagger.json
+│   └── swagger.yaml
+├── go.mod
+├── go.sum
+├── internal                        # Project internal files (main application code lies here)
+│   ├── errors
+│   │   └── http
+│   │       └── errors.go           # HTTP shared errors
+│   ├── models                      # Domain/model layer
+│   │   └── user.go                 # User data
+│   ├── pagination                  # Pagination package
+│   │   ├── pagination.go
+│   │   ├── pagination_test.go
+│   │   ├── sortOrder.go            # UNUSED
+│   │   └── sortOrder_test.go
+│   ├── server
+│   │   └── server.go               # Main application code (the server)
+│   ├── testutils                   # Utilities for testing purposes
+│   │   ├── dateCheck.go
+│   │   ├── errors.go
+│   │   ├── testutils.go
+│   │   └── users.go
+│   └── users                       # Users package
+│       ├── handlers.go             # User handler (http methods) interface
+│       ├── http                    # User handlers implementation
+│       │   ├── handlers.go
+│       │   ├── handlers_test.go
+│       │   └── routes.go
+│       ├── mock                    # User interfaces mock (generated with `make generate`)
+│       │   ├── handlers_mock.go    # Mocked handlers
+│       │   └── repository_mock.go  # Mocked repository
+│       ├── pubsub                  #
+│       │   ├── pubsub.go           # Pubsub interface
+│       │   ├── redis.go            # Redis pubsub implementation
+│       │   └── topics.go           # Subscription topics
+│       ├── repository              # User repository implementation
+│       │   └── mongodb             
+│       │       ├── init_db.js
+│       │       ├── mongodb.go      # Mongodb repository implementation
+│       │       └── mongodb_test.go
+│       ├── repository.go           # User repository interface
+│       └── sec
+│           └── password.go         # Security utility for passwords (UNUSED)
+├── pkg                             # External packages with no internal dependencies
+│   └── db
+│       ├── mongodb                 # Mongodb database access/connection implementation
+│       │   ├── mongo_registry.go
+│       │   └── mongodb.go
+│       └── redis                   # Redis access/connection implementation          
+│           └── redis.go
+└── test
+    └── coverage                    # Test coverage output folder
+```
 
 ## Asumptions, Desitions and Things to change
 
