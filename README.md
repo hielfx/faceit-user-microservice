@@ -16,7 +16,7 @@
 - [Testing the project](#testing-the-project)
 - [Generating a new Swagger documentation (update the documentation)](#generating-a-new-swagger-documentation-update-the-documentation)
 - [Generating new repository mocks](#generating-new-repository-mocks)
-- [Asumptions, Desitions and Things to change/improve](#asumptions-desitions-and-things-to-changeimprove)
+- [Asumptions, Desisions and Things to change/improve](#asumptions-desisions-and-things-to-changeimprove)
 - [Possible way to deploy to production](#possible-way-to-deploy-to-production)
 
 ## Simple Architecture Diagram
@@ -293,24 +293,25 @@ The repository mocks have been generated using [gomock and mockgen](https://gith
 make generate
 ```
 
-## Asumptions, Desitions and Things to change/improve
+## Asumptions, Desisions and Things to change/improve
 
 This section contains the asumptions, desitions made during the development and things to change/improve in no particular order, just as they came to mi mind. It would've been better for us if I organized this section a little bit but Iit came ut like this.
 
+- This project uses [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - User password will be clear text for simplicity: no bcrypt, no hashing, no hiding in JSON responses, etc. This is for the same reasoning the login is not provided, but it should be handled.
 - There should be more edge cases when testing.
 - Despite the text saying we must use "id", I used "_id". There are some workarounds that could be done but for simplicity for this challenge, I didn't do it. Some workarounds:
   - Switching to MySQL/PostgreSQL
   - Adding another field called "id", making it unique and "forgetting" about "_id" (also creating and index for search)
-  - Create 2 fields (_id and id) and sync them with the same value
+  - Create 2 fields (`_id` and `id`) and sync them with the same value
 - A "use case" layer could've been a good addition, in which we test and execute the business logic for each use case. In this project this layer does not exists, all the logic has been done in the handlers layer. This has some side effects, such as:
   - We cannot correctly test the handler logic and the use case logic without changing the same test
   - We cannot reuse the logic in other parts of the application if needed.
   - If the use case layer has a new dependency, we have to modify the handlers instead. For example, the redis dependency; this dependency forced us to include it in the handlers instead on its corresponding layer.
-- In the beggining I used mongo `ObjectId()` (`primitive.ObjectId`) for \_id and string for id but I switched it to Google's UUID package for \_id and dropped the id field. In the end  I used a regular string as the _id for simplicity.
+- In the beggining I used mongo `ObjectId` (`primitive.ObjectId`) for `_id` and string for `id` but I switched it to Google's `UUID` package for `_id` and dropped the `id` field. In the end, I used a regular string as the `_id` for simplicity.
 - There should be a gracefuly shutdown flow to stop the server, but it's not imlpemented yet.
 - It should be good to inject some values in build time, such as the git tag, architecture, os, etc. to the binary, providing a way to print it and check it, but it wasn't implemented.
-- MongoDB was selected instead of MySQL to use a different database than the one I usually use. This derived in some troubles with the use of the `_id` and the new `mongo-go` driver (`mgo.v2` is now unmaintained so I decided to use the official one). This driver is not so compatible with Google's UUID package and it was being stored as a binary. To solve this, I used a mongodb repository, that converts Google's UUID into MongoDB ObjectId. This came with it's own caveats such as the FindOne and the Find method because the documents weren't matching, resulting in a nil document or an empty slice. To solve this I used the string I meantioned earlier.
+- MongoDB was selected instead of MySQL to use a different database than the one I usually use. This derived in some troubles with the use of the `_id` and the new `mongo-go` driver (`mgo.v2` is now unmaintained so I decided to use the official one). This driver is not so compatible with Google's UUID package and it was being stored as a binary. To solve this, I used a mongodb repository, that converts Google's `UUID` into MongoDB `ObjectId`. This came with it's own caveats such as the FindOne and the Find method because the documents weren't matching, resulting in a nil document or an empty slice. To solve this I used the string I meantioned earlier.
 - Currently, you can only filter by the exact string match, it should be case insensitive, but it's not been implemented yet.
 - For the API documentation I used Swagger ([`swaggo/swag`](https://github.com/swaggo/swag)) so the documentation could be generated with comments in the code. Maybe it's a good idea to have a separate document with more information, but I went this way so I could learn more about Swagger and OpenAPI.
 - Currently, the binary only builds for the current system. I don't see this as a flaw per se, because, in the end, it will be run and built inside a docker container.
@@ -333,4 +334,4 @@ Currently it hasn't been provided a way to deploy the application to production,
    7. We would also need access to a MongoDB and a Redis database, already configured in the config file.
 4. In order to deploy all of this, we could us [Github Actions](https://docs.github.com/en/actions) or something similar (e.g. Jenkins) to automate the docker build, push and K8s deployment every time we push a new git tag, with a full CI/CD cyle.
 
-The Kubernetes could be easily deployed to AWS using [KOPS](https://kops.sigs.k8s.io/) or deploying a smaller cluster with [K3s](https://k3s.io/).
+The Kubernetes cluster could be easily deployed to AWS using [KOPS](https://kops.sigs.k8s.io/) or deploying a smaller cluster with [K3s](https://k3s.io/).
