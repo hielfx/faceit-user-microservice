@@ -9,9 +9,9 @@ import (
 	redisdb "user-microservice/pkg/db/redis"
 )
 
-// @title       Faceit Users Microservices
+// @title       Users Microservices
 // @version     1.0
-// @description Faceit Users Microservices
+// @description Users Microservices
 // @BasePath    /api/v1
 func main() {
 

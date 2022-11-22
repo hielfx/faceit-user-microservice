@@ -1,3 +1,5 @@
+// @tag.name        Users
+// @tag.description Users API
 package http
 
 import (
@@ -35,6 +37,7 @@ func NewHttpHandler(usersRepository users.Repository, pubsubRepository userPS.Pu
 //
 // @Summary     Create a user
 // @Description Creates a new user and inserts it in the DB
+// @Tags        Users
 // @Accept      json
 // @Produce     json
 // @Param       body body     models.User true "User to create"
@@ -81,14 +84,15 @@ func (h httpHandler) CreateUser(c echo.Context) error {
 //
 // @Summary     Gets paginated users
 // @Description Gets a paginated users list from the db and returns it
+// @Tags        Users
 // @Produce     json
-// @Param       page      query    int    false "Page to retrieve"
-// @Param       size      query    int    false "Page size"
-// @Param       firstName query    string false "FirstName filter"
-// @Param       lastName  query    string false "LastName filter"
-// @Param       email     query    string false "Email filter"
-// @Param       nickname  query    string false "Nickname filter"
-// @Param       country   query    string false "Country filter"
+// @Param       page      query    int    false "Page to retrieve" default(1)  minimum(1) example(2)
+// @Param       size      query    int    false "Page size"        default(10) minimum(1) example(3)
+// @Param       firstName query    string false "FirstName filter" example(Alice)
+// @Param       lastName  query    string false "LastName filter"  example(Tingo)
+// @Param       email     query    string false "Email filter"     example(alicetingo@example.com) format(email)
+// @Param       nickname  query    string false "Nickname filter"  example(atingo)
+// @Param       country   query    string false "Country filter"   example(DE)
 // @Success     200       {object} models.PaginatedUsers
 // @Failure     400       {object} echo.HTTPError
 // @Failure     500       {object} echo.HTTPError
@@ -118,8 +122,9 @@ func (h httpHandler) GetAllUsers(c echo.Context) error {
 //
 // @Summary     Gets a user
 // @Description Gets a user by its id from the DB and returns it
+// @Tags        Users
 // @Produce     json
-// @Param       userId path     int true "User id"
+// @Param       userId path     string true "User id" example(ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4) format(uuid)
 // @Success     200    {object} models.User
 // @Failure     400    {object} echo.HTTPError
 // @Failure     404    {object} echo.HTTPError
@@ -138,19 +143,21 @@ func (h httpHandler) GetUserByID(c echo.Context) error {
 		if err == mongo.ErrNilDocument {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User not found for ID %s", userID))
 		}
+		logrus.Errorf("Testing: %s", err)
 		return err
 	}
 
 	return c.JSON(http.StatusOK, user)
 }
 
-// GetUserByID godoc
+// UpdateUserByID godoc
 //
 // @Summary     Updates a user
 // @Description Updates a user by its id with the given body data
+// @Tags        Users
 // @Produce     json
 // @Accept      json
-// @Param       userId path     int         true "User id"
+// @Param       userId path     string      true "User id" example(7f598128-fb35-4ced-b80f-c5b5f66bd583) format(uuid)
 // @Param       body   body     models.User true "Request body"
 // @Success     200    {object} models.User
 // @Failure     400    {object} echo.HTTPError
@@ -203,8 +210,9 @@ func (h httpHandler) UpdateUserByID(c echo.Context) error {
 //
 // @Summary     Deletes a user
 // @Description Deletes a user by its id from the DB
+// @Tags        Users
 // @Accept      json
-// @Param       userId path int true "User id"
+// @Param       userId path string true "User id" format(uuid) example(5cace01f-45c3-49f0-a725-c22866874095)
 // @Success     204
 // @Failure     400 {object} echo.HTTPError
 // @Failure     500 {object} echo.HTTPError

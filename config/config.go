@@ -12,8 +12,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Addr string
-	Port int
+	Addr  string
+	Port  int
+	Debug bool
 }
 
 type MongoConfig struct {

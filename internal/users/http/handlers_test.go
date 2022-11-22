@@ -714,6 +714,21 @@ func TestGetAllUsers(t *testing.T) {
 			errors.New("homemade error"),
 			true,
 		},
+		{
+			"Get paginated users with wrong params",
+			pagination.PaginationOptions{},
+			models.PaginatedUsers{},
+			map[string]string{
+				"homemade-param": "true",
+				"page":           "wrong-type",
+				"size":           "43.75",
+			},
+			models.UserFilters{},
+			http.StatusBadRequest,
+			echo.NewHTTPError(http.StatusBadRequest, nil),
+			nil,
+			false,
+		},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {

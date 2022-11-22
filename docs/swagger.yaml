@@ -26,60 +26,86 @@ definitions:
   models.User:
     properties:
       country:
+        example: DE
         type: string
       createdAt:
+        example: "2016-05-18T16:00:00Z"
         type: string
       email:
+        example: atingo@example.com
         type: string
       firstName:
+        example: Alice
         type: string
       id:
+        example: ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4
         type: string
       lastName:
+        example: Tingo
         type: string
       nickname:
+        example: atingo
         type: string
       password:
-        description: should be json:"-" in order to hide the password
+        description: Should be json:"-" in order to hide the password
         type: string
       updatedAt:
+        example: "2016-05-18T16:00:00Z"
         type: string
+    required:
+    - country
+    - email
+    - firstName
+    - lastName
+    - nickname
     type: object
 info:
   contact: {}
-  description: Faceit Users Microservices
-  title: Faceit Users Microservices
+  description: Users Microservices
+  title: Users Microservices
   version: "1.0"
 paths:
   /users:
     get:
       description: Gets a paginated users list from the db and returns it
       parameters:
-      - description: Page to retrieve
+      - default: 1
+        description: Page to retrieve
+        example: 2
         in: query
+        minimum: 1
         name: page
         type: integer
-      - description: Page size
+      - default: 10
+        description: Page size
+        example: 3
         in: query
+        minimum: 1
         name: size
         type: integer
       - description: FirstName filter
+        example: Alice
         in: query
         name: firstName
         type: string
       - description: LastName filter
+        example: Tingo
         in: query
         name: lastName
         type: string
       - description: Email filter
+        example: alicetingo@example.com
+        format: email
         in: query
         name: email
         type: string
       - description: Nickname filter
+        example: atingo
         in: query
         name: nickname
         type: string
       - description: Country filter
+        example: DE
         in: query
         name: country
         type: string
@@ -99,6 +125,8 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Gets paginated users
+      tags:
+      - Users
     post:
       consumes:
       - application/json
@@ -130,6 +158,8 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Create a user
+      tags:
+      - Users
   /users/{userId}:
     delete:
       consumes:
@@ -137,10 +167,12 @@ paths:
       description: Deletes a user by its id from the DB
       parameters:
       - description: User id
+        example: 5cace01f-45c3-49f0-a725-c22866874095
+        format: uuid
         in: path
         name: userId
         required: true
-        type: integer
+        type: string
       responses:
         "204":
           description: No Content
@@ -153,14 +185,18 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Deletes a user
+      tags:
+      - Users
     get:
       description: Gets a user by its id from the DB and returns it
       parameters:
       - description: User id
+        example: ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4
+        format: uuid
         in: path
         name: userId
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -181,16 +217,20 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Gets a user
+      tags:
+      - Users
     post:
       consumes:
       - application/json
       description: Updates a user by its id with the given body data
       parameters:
       - description: User id
+        example: 7f598128-fb35-4ced-b80f-c5b5f66bd583
+        format: uuid
         in: path
         name: userId
         required: true
-        type: integer
+        type: string
       - description: Request body
         in: body
         name: body
@@ -217,4 +257,6 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Updates a user
+      tags:
+      - Users
 swagger: "2.0"

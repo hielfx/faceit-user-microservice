@@ -44,6 +44,8 @@ func NewWithEcho(db *mongo.Database, e *echo.Echo, redisDB *redis.Client, cfg *c
 
 // Run - Executes the server and starts it
 func (s *Server) Run() error {
+	s.echo.Debug = s.config.Server.Debug
+
 	router := s.echo.Group(CurrentApiVersion)
 
 	//middlewares

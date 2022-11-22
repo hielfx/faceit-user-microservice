@@ -1,12 +1,12 @@
 db.users.insertMany([
   {
     _id: "ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4",
-    first_name: "Already inserted user first name 1",
+    first_name: "Alice",
     last_name: "Tingo",
-    nickname: "Already inserted user nickname 1",
+    nickname: "atingo",
     password: "Already inserted user password 1",
-    email: "Already inserted user email 1",
-    country: "GE",
+    email: "alicetingo@example.com",
+    country: "DE",
     created_at: new Date("2016-05-18T16:00:00Z"),
     updated_at: new Date("2016-05-18T16:00:00Z"),
   },

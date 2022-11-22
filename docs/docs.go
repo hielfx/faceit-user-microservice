@@ -22,46 +22,61 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Users"
+                ],
                 "summary": "Gets paginated users",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
+                        "default": 1,
+                        "example": 2,
                         "description": "Page to retrieve",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
+                        "default": 10,
+                        "example": 3,
                         "description": "Page size",
                         "name": "size",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "example": "Alice",
                         "description": "FirstName filter",
                         "name": "firstName",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "example": "Tingo",
                         "description": "LastName filter",
                         "name": "lastName",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "format": "email",
+                        "example": "alicetingo@example.com",
                         "description": "Email filter",
                         "name": "email",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "example": "atingo",
                         "description": "Nickname filter",
                         "name": "nickname",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "example": "DE",
                         "description": "Country filter",
                         "name": "country",
                         "in": "query"
@@ -95,6 +110,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Users"
                 ],
                 "summary": "Create a user",
                 "parameters": [
@@ -142,10 +160,15 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Users"
+                ],
                 "summary": "Gets a user",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4",
                         "description": "User id",
                         "name": "userId",
                         "in": "path",
@@ -187,10 +210,15 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Users"
+                ],
                 "summary": "Updates a user",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "7f598128-fb35-4ced-b80f-c5b5f66bd583",
                         "description": "User id",
                         "name": "userId",
                         "in": "path",
@@ -238,10 +266,15 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Users"
+                ],
                 "summary": "Deletes a user",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "5cace01f-45c3-49f0-a725-c22866874095",
                         "description": "User id",
                         "name": "userId",
                         "in": "path",
@@ -305,34 +338,49 @@ const docTemplate = `{
         },
         "models.User": {
             "type": "object",
+            "required": [
+                "country",
+                "email",
+                "firstName",
+                "lastName",
+                "nickname"
+            ],
             "properties": {
                 "country": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "DE"
                 },
                 "createdAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2016-05-18T16:00:00Z"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "atingo@example.com"
                 },
                 "firstName": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Alice"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4"
                 },
                 "lastName": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Tingo"
                 },
                 "nickname": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "atingo"
                 },
                 "password": {
-                    "description": "should be json:\"-\" in order to hide the password",
+                    "description": "Should be json:\"-\" in order to hide the password",
                     "type": "string"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2016-05-18T16:00:00Z"
                 }
             }
         }
@@ -345,8 +393,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Faceit Users Microservices",
-	Description:      "Faceit Users Microservices",
+	Title:            "Users Microservices",
+	Description:      "Users Microservices",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

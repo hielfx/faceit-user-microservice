@@ -10,15 +10,16 @@ import (
 
 // User - user model
 type User struct {
-	ID        string    `json:"id" bson:"_id"`
-	FirstName string    `json:"firstName" bson:"first_name"`
-	LastName  string    `json:"lastName" bson:"last_name"`
-	Nickname  string    `json:"nickname" bson:"nickname"`
-	Password  string    `json:"password" bson:"password"` // should be json:"-" in order to hide the password
-	Email     string    `json:"email" bson:"email"`
-	Country   string    `json:"country" bson:"country"`
-	CreatedAt time.Time `json:"createdAt" bson:"created_at"`
-	UpdatedAt time.Time `json:"updatedAt" bson:"updated_at"`
+	ID        string `json:"id" bson:"_id" example:"ddd50d89-0cf4-4d35-b8e8-51a2b5a06ce4"`
+	FirstName string `json:"firstName" bson:"first_name" example:"Alice" validate:"required"`
+	LastName  string `json:"lastName" bson:"last_name" example:"Tingo" validate:"required"`
+	Nickname  string `json:"nickname" bson:"nickname" example:"atingo" validate:"required"`
+	// Should be json:"-" in order to hide the password
+	Password  string    `json:"password" bson:"password"`
+	Email     string    `json:"email" bson:"email" example:"atingo@example.com" validate:"required"`
+	Country   string    `json:"country" bson:"country" example:"DE" validate:"required"`
+	CreatedAt time.Time `json:"createdAt" bson:"created_at" example:"2016-05-18T16:00:00Z"`
+	UpdatedAt time.Time `json:"updatedAt" bson:"updated_at" example:"2016-05-18T16:00:00Z"`
 }
 
 // Valid - returns true if the user is valid.
