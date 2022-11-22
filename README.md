@@ -299,7 +299,7 @@ This section contains the asumptions, desitions made during the development and 
 
 - This project uses [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - User password will be clear text for simplicity: no bcrypt, no hashing, no hiding in JSON responses, etc. This is for the same reasoning the login is not provided, but it should be handled.
-- There should be more edge cases when testing.
+- There should be more edge cases when testing, and I would've liked to do integration testing for the whole flow (making a complete request flow).
 - Despite the text saying we must use "id", I used "_id". There are some workarounds that could be done but for simplicity for this challenge, I didn't do it. Some workarounds:
   - Switching to MySQL/PostgreSQL
   - Adding another field called "id", making it unique and "forgetting" about "_id" (also creating and index for search)
