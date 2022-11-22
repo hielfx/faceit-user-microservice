@@ -11,12 +11,13 @@
 - [Running the project](#running-the-project)
   - [Running in "local" mode](#running-in-local-mode)
   - [Running in "development" mode](#running-in-development-mode)
-  - [Project API Routes](#project-api-routes)
+  - [Accesing the routes](#accesing-the-routes)
+- [Configuring the project](#configuring-the-project)
 - [Testing the project](#testing-the-project)
 - [Generating a new Swagger documentation (update the documentation)](#generating-a-new-swagger-documentation-update-the-documentation)
 - [Generating new repository mocks](#generating-new-repository-mocks)
 - [Asumptions, Desitions and Things to change/improve](#asumptions-desitions-and-things-to-changeimprove)
-- [Possible deploment to production](#possible-deploment-to-production)
+- [Possible way to deploy to production](#possible-way-to-deploy-to-production)
 
 ## Simple Architecture Diagram
 
@@ -140,9 +141,19 @@ The binary will be created in `./bin/users-microservice` and can be run with
 CONFIG_FILE=config_file_location.yaml ./bin/users-microservice
 ```
 
-There's a sidecar for testing the integration. It can be run win
+There's a sidecar for testing the integration. It can be built with
 
-The CONFIG_FILE variable is needed for the project to run, also both redis and mongodb database already up and running.
+```sh
+make build-subscriber
+```
+
+And run with
+
+```sh
+CONFIG_FILE=config_file_location.yaml ./bin/subscriber
+```
+
+The `CONFIG_FILE` variable is needed for the project to run, also both redis and mongodb database already up and running.
 
 You can run the project with an easier way in the following section.
 
@@ -155,6 +166,8 @@ For ease of use, there are 2 ways of running this project: local and development
 The main difference is development mode builds the project, along with a subscriber sidecar and the databases; while the local mode just starts the mongodb and redis database, using both docker-compose
 
 ### Running in "local" mode
+
+Local mode means "database only": the docker-compose will only start the databases, the server and sidecar should be run separately. This is for the developer convenience.
 
 To run the project in "local" mode, first the databses should be already up. The following commands will start the databases and the project:
 
@@ -169,7 +182,7 @@ In order to run the subscriber/listener sidecar, run the following command in a 
 make subscriber
 ```
 
-The `make local-up` will create a `volumes` folder in `./docker/local/volumes` which contains both volumes for mongodb and redis.
+The `make local-up` command will create a `volumes` folder in `./docker/local/volumes` which contains both volumes for mongodb and redis.
 
 To stop the databases:
 
@@ -186,6 +199,8 @@ make local-down
 *NOTE: It will NOT delete the volumes folder, it has to be done manually if required*
 
 ### Running in "development" mode
+
+Development mode will start the databases, along with the server and the sidecar. "This is like a deployment, but in the local machine".
 
 To run the project in "development" mode, run the following command:
 
@@ -209,17 +224,25 @@ make dev-down
 
 *NOTE: It will NOT delete the volumes folder, it has to be done manually if required*
 
-### Project API Routes
+### Accesing the routes
 
-- `GET /api/v1/health` -> Simple health check (is not that useful tbh)
+By default, the project runs on `http://localhost:4040`, it could be modified in the [configuration section](#configuring-the-project). The project routes are the following ones:
+
+- `GET /api/v1/health` -> Simple health check, just display a status message (we could thisplay some server info here, but it's not implemented)
   
-- `GET /api/v1/swagger/index.html` -> Swagger documentation
+- `GET /api/v1/swagger/index.html` -> Swagger documentation (the API documentation)
 
 - `GET /api/v1/users` -> Gets the paginated users
 - `GET /api/v1/users/:userId` -> Gets the user by its id
 - `POST /api/v1/users` -> Creates a new user
 - `POST /api/v1/users/:userId` -> Updates the user by its id
 - `DELETE /api/v1/users/:userId` -> Deletes the user by its id
+
+## Configuring the project
+
+The project needs a `CONFIG_FILE` environment variable for it to run. This environment variable must have the path to a configuration yaml file (the file must exists).
+
+Currently, there are 2 configuration files: one for "local mode" and other one for "development mode" inside the folder `config`, located at the root of the project. The main difference is the databases addresses, one using `docker dns` and other using `localhost`.
 
 ## Testing the project
 
@@ -229,7 +252,7 @@ To test the project, run the following command:
 make test
 ```
 
-*NOTE: Docker is necessary to run the repository tests, because it will start a new mongodb docker container*
+*NOTE: Docker is necessary to run the repository tests, because it will start a new mongodb docker container for the mongodb repository testing*
 
 For the test coverage, run the following command:
 
@@ -246,7 +269,8 @@ make coverage-only # `make cover-only` also works
 There's a variable called `EXTRA_TEST_FLAGS` that, by default, as `-v` value. In order to deactivate the `verbosity`, you can run the test as following (you can use this to pass extra flags, but the current `TEST_FLAGS` cannot be overwritten):
 
 ```sh
-EXTRA_TEST_FLAGS= make test
+EXTRA_TEST_FLAGS= make test # disable verbose mode
+EXTRA_TEST_FLAGS="-run ^TestGetUserById" make test # just runs the matching test
 ```
 
 ## Generating a new Swagger documentation (update the documentation)
@@ -289,11 +313,13 @@ This section contains the asumptions, desitions made during the development and 
   - MongoDB was selected instead of MySQL to use a different database than the one I usually use. This derived in some troubles with the use of the `_id` and the new `mongo-go` driver (`mgo.v2` is now unmaintained so I decided to use the official one). This driver is not so compatible with Google's UUID package and it was being stored as a binary. To solve this, I used a mongodb repository, that converts Google's UUID into MongoDB ObjectId. This came with it's own caveats such as the FindOne and the Find method because the documents weren't matching, resulting in a nil document or an empty slice. To solve this I used the string I meantioned earlier.
   - Currently, you can only filter by the exact string match, it should be case insensitive, but it's not been implemented yet.
   - For the API documentation I used Swagger ([`swaggo/swag`](https://github.com/swaggo/swag)) so the documentation could be generated with comments in the code. Maybe it's a good idea to have a separate document with more information, but I went this way so I could learn more about Swagger and OpenAPI.
+  - Currently, the binary only builds for the current system. I don't see this as a flaw per se, because, in the end, it will be run and built inside a docker container.
+  - [Golangci-lint](https://github.com/golangci/golangci-lint) and [SonarQube](https://www.sonarqube.org/) could be used to improve the code quality and security.
   - There may be more things, but I can't recall now.
   
-## Possible deploment to production
+## Possible way to deploy to production
 
-The current configuration doesn't provide a way to deploy the application to production, so I will focus on "how I would do it":
+Currently it hasn't been provided a way to deploy the application to production, so I will focus on "how I would do it":
 
 1. You can still use the Dockerfile to build the application docker image.
 2. The image could be pushed to AWS ECR, so it could be accesible later.
