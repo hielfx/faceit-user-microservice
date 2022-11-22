@@ -142,7 +142,9 @@ func TestCreateUser(t *testing.T) {
 			}
 			mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(tc.mockedUser, tc.expectedError).Times(callTimes)
 			if tc.shouldExecPublish {
-				redisMock.ExpectPublish(usersPubSub.TopicUserCreation, *tc.mockedUser)
+				encodedUser, err := json.Marshal(*tc.mockedUser)
+				require.NoErrorf(t, err, "Expected no error when marshaling mocked user for publish, but was %s", err)
+				redisMock.ExpectPublish(usersPubSub.TopicUserCreation, encodedUser)
 			}
 
 			// When
@@ -591,7 +593,9 @@ func TestUpdateUserByID(t *testing.T) {
 			userRepo.EXPECT().Update(context.TODO(), gomock.Any()).Return(&tc.mockedUser, tc.mockedError).Times(callTimes)
 			userRepo.EXPECT().GetById(context.TODO(), tc.mockedID).Return(&tc.mockedUser, tc.mockedGetError).AnyTimes()
 			if tc.shouldExecPublish {
-				redisMock.ExpectPublish(usersPubSub.TopicUserUpdate, tc.mockedUser)
+				encodedUser, err := json.Marshal(tc.mockedUser)
+				require.NoErrorf(t, err, "Expected no error when marshaling user to publish, but was %s", err)
+				redisMock.ExpectPublish(usersPubSub.TopicUserUpdate, encodedUser)
 			}
 
 			//when
