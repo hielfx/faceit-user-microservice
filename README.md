@@ -307,15 +307,15 @@ This section contains the asumptions, desitions made during the development and 
   - We cannot correctly test the handler logic and the use case logic without changing the same test
   - We cannot reuse the logic in other parts of the application if needed.
   - If the use case layer has a new dependency, we have to modify the handlers instead. For example, the redis dependency; this dependency forced us to include it in the handlers instead on its corresponding layer.
-  - In the beggining I used mongo `ObjectId()` (`primitive.ObjectId`) for \_id and string for id but I switched it to Google's UUID package for \_id and dropped the id field. In the end  I used a regular string as the _id for simplicity.
-  - There should be a gracefuly shutdown flow to stop the server, but it's not imlpemented yet.
-  - It should be good to inject some values in build time, such as the git tag, architecture, os, etc. to the binary, providing a way to print it and check it, but it wasn't implemented.
-  - MongoDB was selected instead of MySQL to use a different database than the one I usually use. This derived in some troubles with the use of the `_id` and the new `mongo-go` driver (`mgo.v2` is now unmaintained so I decided to use the official one). This driver is not so compatible with Google's UUID package and it was being stored as a binary. To solve this, I used a mongodb repository, that converts Google's UUID into MongoDB ObjectId. This came with it's own caveats such as the FindOne and the Find method because the documents weren't matching, resulting in a nil document or an empty slice. To solve this I used the string I meantioned earlier.
-  - Currently, you can only filter by the exact string match, it should be case insensitive, but it's not been implemented yet.
-  - For the API documentation I used Swagger ([`swaggo/swag`](https://github.com/swaggo/swag)) so the documentation could be generated with comments in the code. Maybe it's a good idea to have a separate document with more information, but I went this way so I could learn more about Swagger and OpenAPI.
-  - Currently, the binary only builds for the current system. I don't see this as a flaw per se, because, in the end, it will be run and built inside a docker container.
-  - [Golangci-lint](https://github.com/golangci/golangci-lint) and [SonarQube](https://www.sonarqube.org/) could be used to improve the code quality and security.
-  - There may be more things, but I can't recall now.
+- In the beggining I used mongo `ObjectId()` (`primitive.ObjectId`) for \_id and string for id but I switched it to Google's UUID package for \_id and dropped the id field. In the end  I used a regular string as the _id for simplicity.
+- There should be a gracefuly shutdown flow to stop the server, but it's not imlpemented yet.
+- It should be good to inject some values in build time, such as the git tag, architecture, os, etc. to the binary, providing a way to print it and check it, but it wasn't implemented.
+- MongoDB was selected instead of MySQL to use a different database than the one I usually use. This derived in some troubles with the use of the `_id` and the new `mongo-go` driver (`mgo.v2` is now unmaintained so I decided to use the official one). This driver is not so compatible with Google's UUID package and it was being stored as a binary. To solve this, I used a mongodb repository, that converts Google's UUID into MongoDB ObjectId. This came with it's own caveats such as the FindOne and the Find method because the documents weren't matching, resulting in a nil document or an empty slice. To solve this I used the string I meantioned earlier.
+- Currently, you can only filter by the exact string match, it should be case insensitive, but it's not been implemented yet.
+- For the API documentation I used Swagger ([`swaggo/swag`](https://github.com/swaggo/swag)) so the documentation could be generated with comments in the code. Maybe it's a good idea to have a separate document with more information, but I went this way so I could learn more about Swagger and OpenAPI.
+- Currently, the binary only builds for the current system. I don't see this as a flaw per se, because, in the end, it will be run and built inside a docker container.
+- [Golangci-lint](https://github.com/golangci/golangci-lint) and [SonarQube](https://www.sonarqube.org/) could be used to improve the code quality and security.
+- There may be more things, but I can't recall now.
   
 ## Possible way to deploy to production
 
